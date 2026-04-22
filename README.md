@@ -1,46 +1,22 @@
-# Eezevent Coming Soon Site
+# EezEvent Webapp
 
-Simple static one-page site for GitHub Pages deployment with custom domain `eezevent.com`.
+React + MUI marketing site for EezEvent, using the mobile app navy palette as its base design
+system.
 
-## Files
+## API configuration
 
-- `index.html` page markup
-- `styles.css` brand styling (mobile app palette)
-- `CNAME` custom domain config (`eezevent.com`)
-- `.nojekyll` disables Jekyll processing
+Set `VITE_API_BASE_URL` when the web app should call a specific `eezevent-services` host.
 
-## Deploy To GitHub Pages
+- Example local value: `http://localhost:8000`
+- If omitted, the app uses the current origin and expects the backend to be available there or
+  behind a reverse proxy.
 
-1. Create a new repository, for example `eezevent-coming-soon`.
-2. Copy contents of this folder into the repository root.
-3. Push to `main`.
-4. In GitHub:
-   - `Settings` -> `Pages`
-   - `Source`: `Deploy from a branch`
-   - `Branch`: `main` and `/ (root)`
-5. Wait for Pages to publish.
+For local Vite development, the dev server now proxies backend routes to
+`http://localhost:8000` by default. Override that with `VITE_API_PROXY_TARGET` if your local
+`eezevent-services` instance runs somewhere else.
 
-## Connect `eezevent.com` (GoDaddy DNS)
+## Scripts
 
-Use these records on your domain:
-
-- `A` record: host `@` -> `185.199.108.153`
-- `A` record: host `@` -> `185.199.109.153`
-- `A` record: host `@` -> `185.199.110.153`
-- `A` record: host `@` -> `185.199.111.153`
-- `CNAME` record: host `www` -> `<your-github-username>.github.io`
-
-Then in GitHub Pages settings:
-
-1. Set custom domain to `eezevent.com`.
-2. Enable `Enforce HTTPS` after DNS resolves.
-
-## Local Preview
-
-Open `index.html` directly, or run:
-
-```bash
-cd coming-soon-site
-python3 -m http.server 8080
-```
-
+- `npm run dev` starts the Vite development server.
+- `npm run build` creates a production build.
+- `npm run preview` serves the production build locally.

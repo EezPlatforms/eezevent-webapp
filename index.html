@@ -3,153 +3,29 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>EezEvent - Coming Soon</title>
+    <title>EezEvent</title>
     <meta
       name="description"
-      content="EezEvent is a modern event planning platform for clients, planners, and vendors. Public release planned for Q2 2026."
+      content="EezEvent is a modern event planning platform for clients, planners, and vendors."
     />
-    <meta property="og:title" content="EezEvent - Coming Soon" />
+    <meta property="og:title" content="EezEvent" />
     <meta
       property="og:description"
-      content="A modern event planning platform built with classic operational discipline."
+      content="Event planning with modern speed and classic discipline."
     />
     <meta property="og:type" content="website" />
-    <link rel="icon" type="image/png" sizes="32x32" href="./assets/eezevent-just-logo.png" />
-    <link rel="icon" type="image/png" sizes="192x192" href="./assets/eezevent-just-logo.png" />
-    <link rel="apple-touch-icon" href="./assets/eezevent-just-logo.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/eezevent-just-logo.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/assets/eezevent-just-logo.png" />
+    <link rel="apple-touch-icon" href="/assets/eezevent-just-logo.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css" />
+    <script type="module" src="/src/main.jsx"></script>
   </head>
   <body>
-    <main class="page">
-      <header class="topbar">
-        <div class="brand-lockup">
-          <img class="brand-logo" src="./assets/eezevent-just-logo.png" alt="EezEvent logo" />
-          <span class="brand-wordmark">EezEvent</span>
-        </div>
-        <p class="topbar-note">Public release planned for Q2 2026</p>
-      </header>
-
-      <section class="hero-panel">
-        <p class="eyebrow">Coming Soon</p>
-        <h1>Event planning with modern speed and classic discipline.</h1>
-        <p class="subtitle">
-          EezEvent brings clients, planners, and vendors into one organized workspace to handle
-          outreach, inquiries, quotes, and decisions with clarity.
-        </p>
-        <div class="button-row">
-          <a
-            class="btn btn-solid"
-            href="mailto:support@eezevent.com?subject=Join%20the%20EezEvent%20waitlist"
-            >Join waitlist</a
-          >
-          <a class="btn btn-outline" href="./help.html">View help guide</a>
-          <a
-            class="btn btn-outline"
-            href="mailto:support@eezevent.com?subject=Vendor%20early%20access"
-            >Vendor early access</a
-          >
-        </div>
-        <div class="hero-meta">
-          <article>
-            <h3>Unified Workspace</h3>
-            <p>Clients and vendors collaborate in one operational flow.</p>
-          </article>
-          <article>
-            <h3>Structured Pipeline</h3>
-            <p>Every inquiry moves with clear, trackable status.</p>
-          </article>
-          <article>
-            <h3>Launch Focus</h3>
-            <p>Early access is prioritized for active teams and vendors.</p>
-          </article>
-        </div>
-      </section>
-
-      <section class="section launch-section">
-        <h2>What to expect at launch</h2>
-        <div class="launch-grid">
-          <article class="launch-card">
-            <img
-              class="launch-media"
-              src="./assets/launch-workspace.jpg"
-              alt="Event planning workspace"
-              loading="lazy"
-            />
-            <h3>Unified Event Workspace</h3>
-            <p>Manage event details, service needs, and communication from a single place.</p>
-          </article>
-          <article class="launch-card">
-            <img
-              class="launch-media"
-              src="./assets/launch-pipeline.jpg"
-              alt="Inquiry pipeline overview"
-              loading="lazy"
-            />
-            <h3>Structured Inquiry Pipeline</h3>
-            <p>Track outreach, responses, and quote progress with clear status visibility.</p>
-          </article>
-          <article class="launch-card">
-            <img
-              class="launch-media"
-              src="./assets/launch-vendor.jpg"
-              alt="Vendor collaboration"
-              loading="lazy"
-            />
-            <h3>Vendor Collaboration Tools</h3>
-            <p>Support faster follow-ups with messaging, files, and timeline context.</p>
-          </article>
-        </div>
-      </section>
-
-      <section class="audience">
-        <p>Built for</p>
-        <ul>
-          <li>Clients</li>
-          <li>Event planners</li>
-          <li>Vendors</li>
-        </ul>
-      </section>
-
-      <section class="section">
-        <h2>Why teams choose EezEvent</h2>
-        <div class="card-grid">
-          <article class="card">
-            <h3>Clear Coordination</h3>
-            <p>Consolidate messages, documents, and quote steps in a single workflow.</p>
-          </article>
-          <article class="card">
-            <h3>Reliable Visibility</h3>
-            <p>Understand what is open, pending, and confirmed without spreadsheet overhead.</p>
-          </article>
-          <article class="card">
-            <h3>Purpose-built Outreach</h3>
-            <p>Help vendors discover opportunities and respond with context that matters.</p>
-          </article>
-        </div>
-      </section>
-
-      <section class="cta">
-        <div>
-          <h2>A modern platform, built for long-term operations.</h2>
-          <p>Request early access and we will reach out when your region opens.</p>
-        </div>
-        <div class="button-row">
-          <a class="btn btn-solid" href="mailto:support@eezevent.com?subject=Early%20access%20request"
-            >Request access</a
-          >
-        </div>
-      </section>
-
-      <footer class="launch-note">
-        <p>Contact: support@eezevent.com</p>
-        <p>© 2026 EezPlatforms LLC. EezEvent is a product of EezPlatforms LLC. All rights reserved.</p>
-      </footer>
-    </main>
+    <div id="root"></div>
   </body>
 </html>
