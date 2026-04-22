@@ -1,0 +1,21 @@
+{
+	"folders": [
+		{
+			"path": "eezevent-services"
+		},
+		{
+			"name": "eezevent-webui",
+			"path": "eezevent-webui"
+		},
+		{
+			"path": "eezevent-mobileapp"
+		},
+		{
+			"path": "eezevent-infra"
+		},
+		{
+			"path": "eezevent-coming-soon"
+		}
+	],
+	"settings": {}
+}
