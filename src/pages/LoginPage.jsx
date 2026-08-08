@@ -1,5 +1,6 @@
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import EmailRoundedIcon from "@mui/icons-material/EmailRounded";
+import GoogleIcon from "@mui/icons-material/Google";
 import LockRoundedIcon from "@mui/icons-material/LockRounded";
 import VisibilityOffRoundedIcon from "@mui/icons-material/VisibilityOffRounded";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
@@ -16,31 +17,49 @@ import {
   ToggleButtonGroup,
   Typography,
 } from "@mui/material";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, login, resendValidationCode, validateEmail } = useAuth();
+  const { isAuthenticated, login, loginWithGoogle, resendValidationCode, validateEmail } = useAuth();
   const [loginType, setLoginType] = useState("client");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
   const [requireValidation, setRequireValidation] = useState(false);
   const [validationCode, setValidationCode] = useState("");
   const [validationMessage, setValidationMessage] = useState("");
   const [validating, setValidating] = useState(false);
   const [resending, setResending] = useState(false);
+  const googleButtonRef = useRef(null);
+  const googleInitializedRef = useRef(false);
+  const loginTypeRef = useRef(loginType);
+  const googleClientId =
+    import.meta.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
+    import.meta.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ||
+    import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID ||
+    import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+    "";
+  const authMode = String(
+    import.meta.env.EXPO_PUBLIC_AUTH_MODE || import.meta.env.VITE_AUTH_MODE || "mixed",
+  ).toLowerCase();
+  const isSocialOnlyAuth = authMode === "social_only";
 
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
   }
 
   const nextPath = location.state?.nextPath || "/";
+
+  useEffect(() => {
+    loginTypeRef.current = loginType;
+  }, [loginType]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -63,6 +82,90 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  const handleGoogleCredential = useCallback(
+    async (googleResponse) => {
+      const credential = googleResponse?.credential;
+      if (!credential) {
+        setError("Google login failed. Please try again.");
+        return;
+      }
+
+      setGoogleLoading(true);
+      setError("");
+      setValidationMessage("");
+      setRequireValidation(false);
+
+      try {
+        const selectedLoginType = loginTypeRef.current;
+        await loginWithGoogle({ loginType: selectedLoginType, idToken: credential });
+        navigate(nextPath, { replace: true });
+      } catch (err) {
+        setError(err.message || "Google login failed");
+      } finally {
+        setGoogleLoading(false);
+      }
+    },
+    [loginWithGoogle, navigate, nextPath],
+  );
+
+  useEffect(() => {
+    if (!googleClientId) {
+      return undefined;
+    }
+
+    const initializeGoogle = () => {
+      if (!window.google?.accounts?.id) {
+        return;
+      }
+
+      if (!googleInitializedRef.current) {
+        window.google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: handleGoogleCredential,
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+        googleInitializedRef.current = true;
+      }
+
+      if (googleButtonRef.current) {
+        googleButtonRef.current.innerHTML = "";
+        window.google.accounts.id.renderButton(googleButtonRef.current, {
+          type: "standard",
+          theme: "outline",
+          size: "large",
+          text: "continue_with",
+          shape: "rectangular",
+          width: 392,
+        });
+      }
+    };
+
+    if (window.google?.accounts?.id) {
+      initializeGoogle();
+      return undefined;
+    }
+
+    let script = document.getElementById("google-identity-sdk");
+    const onLoad = () => initializeGoogle();
+
+    if (!script) {
+      script = document.createElement("script");
+      script.id = "google-identity-sdk";
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      script.onload = onLoad;
+      document.head.appendChild(script);
+    } else {
+      script.addEventListener("load", onLoad);
+    }
+
+    return () => {
+      script?.removeEventListener("load", onLoad);
+    };
+  }, [googleClientId, handleGoogleCredential]);
 
   const handleValidate = async () => {
     setError("");
@@ -156,52 +259,88 @@ export default function LoginPage() {
           {error ? <Alert severity="error">{error}</Alert> : null}
           {validationMessage ? <Alert severity="success">{validationMessage}</Alert> : null}
 
-          <Stack component="form" spacing={2} onSubmit={handleSubmit}>
-            <TextField
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              autoComplete="email"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <EmailRoundedIcon fontSize="small" />
-                  </InputAdornment>
-                ),
+          {googleClientId ? (
+            <Paper
+              sx={{
+                p: 2,
+                border: "1px solid rgba(120,147,255,0.18)",
+                backgroundColor: "rgba(255,255,255,0.05)",
               }}
-            />
-            <TextField
-              label="Password"
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              autoComplete="current-password"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <LockRoundedIcon fontSize="small" />
-                  </InputAdornment>
-                ),
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton onClick={() => setShowPassword((current) => !current)} edge="end">
-                      {showPassword ? <VisibilityOffRoundedIcon /> : <VisibilityRoundedIcon />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
-            <Button
-              type="submit"
-              variant="contained"
-              size="large"
-              endIcon={<ArrowForwardRoundedIcon />}
-              disabled={loading}
             >
-              {loading ? "Signing in..." : `Sign in as ${loginType}`}
-            </Button>
-          </Stack>
+              <Stack spacing={1.25}>
+                <Typography variant="body2" color="text.secondary">
+                  Use the same Google sign-in configuration as the mobile app.
+                </Typography>
+                <Box
+                  ref={googleButtonRef}
+                  sx={{
+                    minHeight: 44,
+                    opacity: googleLoading ? 0.65 : 1,
+                    pointerEvents: googleLoading ? "none" : "auto",
+                  }}
+                />
+                {googleLoading ? (
+                  <Button variant="contained" startIcon={<GoogleIcon />} disabled fullWidth>
+                    Signing in with Google...
+                  </Button>
+                ) : null}
+              </Stack>
+            </Paper>
+          ) : (
+            <Alert severity="info">
+              Google sign-in is not configured. Set `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` or
+              `EXPO_PUBLIC_GOOGLE_CLIENT_ID` for the web app.
+            </Alert>
+          )}
+
+          {!isSocialOnlyAuth ? (
+            <Stack component="form" spacing={2} onSubmit={handleSubmit}>
+              <TextField
+                label="Email"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                autoComplete="email"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <EmailRoundedIcon fontSize="small" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <TextField
+                label="Password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                autoComplete="current-password"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LockRoundedIcon fontSize="small" />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setShowPassword((current) => !current)} edge="end">
+                        {showPassword ? <VisibilityOffRoundedIcon /> : <VisibilityRoundedIcon />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <Button
+                type="submit"
+                variant="contained"
+                size="large"
+                endIcon={<ArrowForwardRoundedIcon />}
+                disabled={loading}
+              >
+                {loading ? "Signing in..." : `Sign in as ${loginType}`}
+              </Button>
+            </Stack>
+          ) : null}
 
           {requireValidation ? (
             <Paper

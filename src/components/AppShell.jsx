@@ -22,6 +22,17 @@ export default function AppShell({ children }) {
   const location = useLocation();
   const { auth, isAuthenticated, logout } = useAuth();
   const [accountAnchor, setAccountAnchor] = useState(null);
+  const visibleNavItems = useMemo(
+    () =>
+      navItems.filter((item) => {
+        if (isAuthenticated && item.to === "/login") return false;
+        if (item.to === "/events") {
+          return isAuthenticated && auth?.userType === "client";
+        }
+        return true;
+      }),
+    [auth?.userType, isAuthenticated],
+  );
   const accountLabel = useMemo(() => {
     const firstName = auth?.userFirstName?.trim();
     if (firstName) return firstName;
@@ -71,9 +82,7 @@ export default function AppShell({ children }) {
             </Stack>
 
             <Stack direction="row" spacing={1} alignItems="center">
-              {navItems
-                .filter((item) => !(isAuthenticated && item.to === "/login"))
-                .map((item) => {
+              {visibleNavItems.map((item) => {
                   const selected =
                     item.to === "/" ? location.pathname === "/" : location.pathname.startsWith(item.to);
 

@@ -3,6 +3,7 @@ import {
   clearStoredAuth,
   getStoredAuth,
   loginClient,
+  loginWithGoogle,
   loginVendor,
   logoutClient,
   logoutVendor,
@@ -32,6 +33,27 @@ export function AuthProvider({ children }) {
           token: data?.token || "",
           userType: data?.userType || loginType,
           userEmail: data?.userEmail || email,
+          userFirstName: data?.userFirstName || "",
+          userLastName: data?.userLastName || "",
+          userPhone: data?.userPhone || "",
+          isEventPlanner: Boolean(data?.is_event_planner),
+        };
+
+        setAuth(nextAuth);
+        setStoredAuth(nextAuth);
+        return data;
+      },
+      async loginWithGoogle({ loginType, idToken }) {
+        const data = await loginWithGoogle({
+          idToken,
+          userType: loginType,
+          clientPlatform: "web",
+        });
+
+        const nextAuth = {
+          token: data?.token || "",
+          userType: data?.userType || loginType,
+          userEmail: data?.userEmail || "",
           userFirstName: data?.userFirstName || "",
           userLastName: data?.userLastName || "",
           userPhone: data?.userPhone || "",

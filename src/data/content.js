@@ -4,6 +4,7 @@ import vendorImage from "../../assets/launch-vendor.jpg";
 
 export const navItems = [
   { label: "Home", to: "/" },
+  { label: "My Events", to: "/events" },
   { label: "Search Vendors", to: "/search-vendors" },
   { label: "Help Guide", to: "/help" },
   { label: "Login", to: "/login" },

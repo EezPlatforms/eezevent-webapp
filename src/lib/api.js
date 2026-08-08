@@ -166,6 +166,20 @@ export const logoutVendor = async () =>
     method: "POST",
   });
 
+export const loginWithGoogle = async ({ idToken, userType, clientPlatform = "web" }) =>
+  requestJson("/auth/google/login", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      id_token: idToken,
+      provider: "google",
+      user_type: userType,
+      client_platform: clientPlatform,
+    }),
+  });
+
 export const fetchServiceTypes = async () => requestJson("/business/service-types");
 
 export const fetchServicesByZipcode = async (zipcode) => {
@@ -205,3 +219,55 @@ export const fetchServiceCatalogItems = async (serviceId) => {
       }))
     : [];
 };
+
+export const fetchClientEvents = async (options = {}) => {
+  const params = new URLSearchParams();
+
+  if (options.includeInactive) {
+    params.set("include_inactive", "true");
+  }
+
+  if (options.includeTeam !== false) {
+    params.set("include_team", "true");
+  }
+
+  const query = params.toString();
+  const items = await requestJson(`/events/list_events${query ? `?${query}` : ""}`, {
+    headers: {
+      "Cache-Control": "no-cache",
+    },
+  });
+
+  return Array.isArray(items) ? items : [];
+};
+
+export const fetchEventTypes = async () => {
+  const payload = await requestJson("/events/types");
+  return Array.isArray(payload?.event_types) ? payload.event_types : [];
+};
+
+export const fetchClientByEmail = async (email) => {
+  if (!email) {
+    throw new Error("Missing email.");
+  }
+
+  return requestJson(`/clients/get_client_by_email/${encodeURIComponent(email)}`);
+};
+
+export const createClientEvent = async (payload) =>
+  requestJson("/events/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+export const createPlannerEventForClient = async (payload) =>
+  requestJson("/events/planner/create_for_client", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
