@@ -1,3 +1,4 @@
+"use client";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { Button } from "@mui/material";
 import { RouterLink } from "../lib/navigation";
