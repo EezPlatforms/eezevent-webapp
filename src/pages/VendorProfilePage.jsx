@@ -16,7 +16,7 @@ export default function VendorProfilePage({serviceId,initialProfile}) {
   const [reviewCount, setReviewCount] = useState(0);
   const [average, setAverage] = useState(null);
   const [offset, setOffset] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialProfile);
   const [moreLoading, setMoreLoading] = useState(false);
   const [error, setError] = useState("");
   const [reviewError, setReviewError] = useState("");
