@@ -1,3 +1,4 @@
+"use client";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import EastRoundedIcon from "@mui/icons-material/EastRounded";
 import HubRoundedIcon from "@mui/icons-material/HubRounded";
