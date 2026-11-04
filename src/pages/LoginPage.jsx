@@ -18,7 +18,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "../lib/navigation";
 import { useAuth } from "../lib/auth";
 
 export default function LoginPage() {
@@ -41,13 +41,13 @@ export default function LoginPage() {
   const googleInitializedRef = useRef(false);
   const loginTypeRef = useRef(loginType);
   const googleClientId =
-    import.meta.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
-    import.meta.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ||
-    import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID ||
-    import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+    process.env.NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
+    process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+    process.env.NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
+    process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
     "";
   const authMode = String(
-    import.meta.env.EXPO_PUBLIC_AUTH_MODE || import.meta.env.VITE_AUTH_MODE || "mixed",
+    process.env.NEXT_PUBLIC_AUTH_MODE || process.env.NEXT_PUBLIC_AUTH_MODE || "mixed",
   ).toLowerCase();
   const isSocialOnlyAuth = authMode === "social_only";
 
