@@ -1,3 +1,4 @@
+"use client";
 import CalendarTodayRoundedIcon from "@mui/icons-material/CalendarTodayRounded";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import EventBusyRoundedIcon from "@mui/icons-material/EventBusyRounded";
