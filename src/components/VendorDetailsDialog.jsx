@@ -1,6 +1,6 @@
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { Button } from "@mui/material";
-import { Link as RouterLink } from "react-router-dom";
+import { RouterLink } from "../lib/navigation";
 import EmailRoundedIcon from "@mui/icons-material/EmailRounded";
 import InstagramIcon from "@mui/icons-material/Instagram";
 import LanguageRoundedIcon from "@mui/icons-material/LanguageRounded";
