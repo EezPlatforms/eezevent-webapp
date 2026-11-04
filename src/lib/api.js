@@ -271,3 +271,23 @@ export const createPlannerEventForClient = async (payload) =>
     },
     body: JSON.stringify(payload),
   });
+
+
+// Existing reviews endpoint used by eezevent-mobileapp/src/api/reviews.js.
+export const fetchVendorReviews = async (serviceId, { limit = 5, offset = 0 } = {}) => {
+  const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  const data = await requestJson(`/reviews/services/${encodeURIComponent(serviceId)}?${params}`);
+  return {
+    reviews: (data?.reviews || []).map(review => ({
+      id: review.review_id,
+      rating: review.rating,
+      comment: review.comment,
+      authorName: review.author_name,
+      createdAt: review.created_at,
+      vendorResponse: review.vendor_response,
+      vendorResponseUpdatedAt: review.vendor_response_updated_at,
+    })),
+    reviewCount: data?.review_count || 0,
+    averageRating: data?.average_rating ?? null,
+  };
+};
