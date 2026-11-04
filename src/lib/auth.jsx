@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
   clearStoredAuth,
   getStoredAuth,
@@ -17,7 +17,9 @@ import {
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [auth, setAuth] = useState(() => getStoredAuth());
+  const [auth, setAuth] = useState(null);
+
+  useEffect(() => { setAuth(getStoredAuth()); }, []);
 
   const value = useMemo(
     () => ({
