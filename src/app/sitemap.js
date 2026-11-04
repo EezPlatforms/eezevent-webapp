@@ -1,0 +1,1 @@
+export default async function sitemap(){const ids=(process.env.PUBLIC_VENDOR_SERVICE_IDS||"").split(",").filter(x=>/^\d+$/.test(x));return [{url:"https://eezevent.com",lastModified:new Date()},...ids.map(id=>({url:"https://eezevent.com/vendors/"+id}))];}
