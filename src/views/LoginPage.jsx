@@ -1,7 +1,10 @@
 "use client";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import EmailRoundedIcon from "@mui/icons-material/EmailRounded";
-import GoogleIcon from "@mui/icons-material/Google";
+import PersonOutlineRoundedIcon from "@mui/icons-material/PersonOutlineRounded";
+import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
+import logo from "../../assets/eezevent-just-logo.png";
+import { alpha } from "@mui/material/styles";
 import LockRoundedIcon from "@mui/icons-material/LockRounded";
 import VisibilityOffRoundedIcon from "@mui/icons-material/VisibilityOffRounded";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
@@ -9,6 +12,8 @@ import {
   Alert,
   Box,
   Button,
+  Divider,
+  Link,
   IconButton,
   InputAdornment,
   Paper,
@@ -19,14 +24,15 @@ import {
   Typography,
 } from "@mui/material";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Navigate, useLocation, useNavigate } from "../lib/navigation";
+import { Navigate, RouterLink, useLocation, useNavigate } from "../lib/navigation";
+import { isSocialOnlyAuth } from "../lib/authMode";
 import { useAuth } from "../lib/auth";
 
-export default function LoginPage() {
+export default function LoginPage({ initialLoginType = "client", initialNextPath = "/" }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, login, loginWithGoogle, resendValidationCode, validateEmail } = useAuth();
-  const [loginType, setLoginType] = useState("client");
+  const [loginType, setLoginType] = useState(initialLoginType);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -44,19 +50,10 @@ export default function LoginPage() {
   const googleClientId =
     process.env.NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
     process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
-    process.env.NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
-    process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
     "";
-  const authMode = String(
-    process.env.NEXT_PUBLIC_AUTH_MODE || process.env.NEXT_PUBLIC_AUTH_MODE || "mixed",
-  ).toLowerCase();
-  const isSocialOnlyAuth = authMode === "social_only";
 
-  if (isAuthenticated) {
-    return <Navigate to="/" replace />;
-  }
 
-  const nextPath = location.state?.nextPath || "/";
+  const nextPath = initialNextPath;
 
   useEffect(() => {
     loginTypeRef.current = loginType;
@@ -111,7 +108,7 @@ export default function LoginPage() {
   );
 
   useEffect(() => {
-    if (!googleClientId) {
+    if (isAuthenticated || !googleClientId) {
       return undefined;
     }
 
@@ -138,7 +135,7 @@ export default function LoginPage() {
           size: "large",
           text: "continue_with",
           shape: "rectangular",
-          width: 392,
+          width: Math.min(400, googleButtonRef.current.clientWidth || 320),
         });
       }
     };
@@ -166,7 +163,7 @@ export default function LoginPage() {
     return () => {
       script?.removeEventListener("load", onLoad);
     };
-  }, [googleClientId, handleGoogleCredential]);
+  }, [googleClientId, handleGoogleCredential, isAuthenticated]);
 
   const handleValidate = async () => {
     setError("");
@@ -198,10 +195,15 @@ export default function LoginPage() {
     }
   };
 
+  if (isAuthenticated) {
+    return <Navigate to={nextPath} replace />;
+  }
+
   return (
     <Box
       sx={{
-        minHeight: "calc(100vh - 160px)",
+        minHeight: "calc(100dvh - 220px)",
+        py: { xs: 1, md: 3 },
         display: "grid",
         placeItems: "center",
       }}
@@ -209,26 +211,21 @@ export default function LoginPage() {
       <Paper
         sx={{
           width: "100%",
-          maxWidth: 480,
-          p: { xs: 3, md: 4 },
-          border: "1px solid rgba(120,147,255,0.18)",
+          maxWidth: 460,
+          p: { xs: 3, sm: 4.5 },
+          borderRadius: 3,
+          border: "var(--eez-border-3)",
           background:
-            "linear-gradient(180deg, rgba(32,40,132,0.96), rgba(21,28,99,0.96))",
-          boxShadow: "0 18px 40px rgba(8, 12, 46, 0.18)",
+            "var(--eez-surface-18)",
+          boxShadow: theme => theme.palette.mode === "light" ? "0 16px 48px rgba(24,36,59,0.08)" : "0 16px 48px rgba(0,0,0,0.18)",
         }}
       >
         <Stack spacing={2.5}>
-          <Box>
-            <Typography variant="overline" color="primary.light">
-              Sign In
-            </Typography>
-            <Typography variant="h3" sx={{ mt: 0.5 }}>
-              Access your EezEvent workspace
-            </Typography>
-            <Typography color="text.secondary" sx={{ mt: 1 }}>
-              Use the same client or vendor credentials supported by the mobile app and backend.
-            </Typography>
-          </Box>
+          <Stack spacing={1.5} alignItems="center" sx={{ textAlign: "center", mb: .5 }}>
+            <Box component="img" src={logo.src} alt="EezEvent" sx={{ width: 48, height: 48, borderRadius: 1.5, mb: .5 }} />
+            <Typography component="h1" sx={{ fontSize: { xs: 29, sm: 32 }, fontWeight: 700, lineHeight: 1.2, letterSpacing: "-.025em" }}>Welcome back</Typography>
+            <Typography color="text.secondary" sx={{ fontSize: 16 }}>Choose your account to continue.</Typography>
+          </Stack>
 
           <ToggleButtonGroup
             exclusive
@@ -241,58 +238,44 @@ export default function LoginPage() {
               setRequireValidation(false);
             }}
             fullWidth
+            aria-label="Sign-in account type"
+            disabled={loading || googleLoading}
             sx={{
-              "& .MuiToggleButton-root": {
-                color: "text.secondary",
-                borderColor: "rgba(120,147,255,0.24)",
-                py: 1.2,
-              },
-              "& .Mui-selected": {
-                backgroundColor: "rgba(46,53,232,0.18) !important",
-                color: "common.white !important",
+              gap: 1.5,
+              "& .MuiToggleButtonGroup-grouped": { border: "1px solid", borderColor: "divider", borderRadius: "12px !important", m: "0 !important" },
+              "& .MuiToggleButton-root": { color: "text.secondary", py: 1.75, flexDirection: "column", gap: .75, fontSize: 15, fontWeight: 600, textTransform: "none" },
+              "& .MuiToggleButton-root.Mui-selected": {
+                bgcolor: theme => alpha(theme.palette.primary.main, theme.palette.mode === "light" ? .06 : .18),
+                color: theme => theme.palette.mode === "light" ? theme.palette.primary.main : theme.palette.primary.light,
+                borderColor: "primary.main",
+                "&:hover": { bgcolor: theme => alpha(theme.palette.primary.main, .12) },
               },
             }}
           >
-            <ToggleButton value="client">Client</ToggleButton>
-            <ToggleButton value="vendor">Vendor</ToggleButton>
+            <ToggleButton value="vendor"><StorefrontOutlinedIcon />Business</ToggleButton>
+            <ToggleButton value="client"><PersonOutlineRoundedIcon />Host</ToggleButton>
           </ToggleButtonGroup>
+          <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center", lineHeight: 1.6 }}>
+            {loginType === "vendor" ? "Access your business account and services." : "Access your events and planning workspace."}
+          </Typography>
 
           {error ? <Alert severity="error">{error}</Alert> : null}
           {validationMessage ? <Alert severity="success">{validationMessage}</Alert> : null}
 
           {googleClientId ? (
-            <Paper
-              sx={{
-                p: 2,
-                border: "1px solid rgba(120,147,255,0.18)",
-                backgroundColor: "rgba(255,255,255,0.05)",
-              }}
-            >
-              <Stack spacing={1.25}>
-                <Typography variant="body2" color="text.secondary">
-                  Use the same Google sign-in configuration as the mobile app.
-                </Typography>
-                <Box
-                  ref={googleButtonRef}
-                  sx={{
-                    minHeight: 44,
-                    opacity: googleLoading ? 0.65 : 1,
-                    pointerEvents: googleLoading ? "none" : "auto",
-                  }}
-                />
-                {googleLoading ? (
-                  <Button variant="contained" startIcon={<GoogleIcon />} disabled fullWidth>
-                    Signing in with Google...
-                  </Button>
-                ) : null}
-              </Stack>
-            </Paper>
+            <Stack spacing={1.5} alignItems="center" sx={{ py: 1 }}>
+              <Box
+                ref={googleButtonRef}
+                sx={{ width: "100%", minHeight: 44, display: "flex", justifyContent: "center", opacity: googleLoading ? .6 : 1, pointerEvents: googleLoading ? "none" : "auto" }}
+              />
+              <Typography variant="caption" color="text.secondary" role="status" aria-live="polite" sx={{ textAlign: "center" }}>
+                {googleLoading ? "Signing you in…" : "Continue securely with your Google account."}
+              </Typography>
+            </Stack>
           ) : (
-            <Alert severity="info">
-              Google sign-in is not configured. Set `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` or
-              `EXPO_PUBLIC_GOOGLE_CLIENT_ID` for the web app.
-            </Alert>
+            <Alert severity="info">Google sign-in is currently unavailable. Please try again later.</Alert>
           )}
+          {!isSocialOnlyAuth && googleClientId && <Divider sx={{ color: "text.secondary", fontSize: 13 }}>or use email</Divider>}
 
           {!isSocialOnlyAuth ? (
             <Stack component="form" spacing={2} onSubmit={handleSubmit}>
@@ -338,17 +321,17 @@ export default function LoginPage() {
                 endIcon={<ArrowForwardRoundedIcon />}
                 disabled={loading}
               >
-                {loading ? "Signing in..." : `Sign in as ${loginType}`}
+                {loading ? "Signing in..." : `Sign in as ${loginType === "vendor" ? "Business" : "Host"}`}
               </Button>
             </Stack>
           ) : null}
 
-          {requireValidation ? (
+          {!isSocialOnlyAuth && requireValidation ? (
             <Paper
               sx={{
                 p: 2.25,
-                border: "1px solid rgba(120,147,255,0.18)",
-                backgroundColor: "rgba(255,255,255,0.05)",
+                border: "var(--eez-border-3)",
+                backgroundColor: "var(--eez-surface-7)",
               }}
             >
               <Stack spacing={1.5}>
@@ -373,6 +356,8 @@ export default function LoginPage() {
               </Stack>
             </Paper>
           ) : null}
+          <Divider />
+          <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center", lineHeight: 1.8 }}>New to EezEvent?{" "}<Link component={RouterLink} to={`/register?next=${encodeURIComponent(nextPath)}`} sx={{ color: theme => theme.palette.mode === "light" ? theme.palette.primary.main : theme.palette.primary.light, fontWeight: 600, textUnderlineOffset: 3 }}>Create an account</Link></Typography>
         </Stack>
       </Paper>
     </Box>

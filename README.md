@@ -1,22 +1,76 @@
 # EezEvent Webapp
 
-React + MUI marketing site for EezEvent, using the mobile app navy palette as its base design
-system.
+Next.js App Router + React + MUI website for EezEvent.
 
 ## API configuration
 
-Set `VITE_API_BASE_URL` when the web app should call a specific `eezevent-services` host.
+Local development calls FastAPI at `http://localhost:8000` by default.
+To use another backend, set this in `.env.local`:
 
-- Example local value: `http://localhost:8000`
-- If omitted, the app uses the current origin and expects the backend to be available there or
-  behind a reverse proxy.
+```dotenv
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+```
 
-For local Vite development, the dev server now proxies backend routes to
-`http://localhost:8000` by default. Override that with `VITE_API_PROXY_TARGET` if your local
-`eezevent-services` instance runs somewhere else.
+Restart `npm run dev` after changing environment variables. `NEXT_PUBLIC_API_BASE_URL`
+is embedded in browser code at build time, so set it before `npm run build` for deployments
+(for example, `https://api.eezevent.com`). When omitted in production, browser requests use
+the website origin and require a reverse proxy to the backend.
+
+Server-rendered vendor profiles use `API_BASE_URL` if set, then
+`NEXT_PUBLIC_API_BASE_URL`, with the same localhost default in development.
+Set one of these variables for production vendor profiles.
+
+`VITE_API_BASE_URL` and `VITE_API_PROXY_TARGET` are no longer used.
 
 ## Scripts
 
-- `npm run dev` starts the Vite development server.
-- `npm run build` creates a production build.
-- `npm run preview` serves the production build locally.
+- `npm run dev` starts Next.js with output in `.next-dev`.
+- `npm run build` creates a production build in `.next`.
+- `npm start` serves the production build.
+
+### Google sign-in
+
+Set `NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID` in `.env.local` to your Google OAuth web
+client ID (`NEXT_PUBLIC_GOOGLE_CLIENT_ID` is also supported). Expo's
+`EXPO_PUBLIC_*` variables are not read by this Next.js app. Restart the dev server
+after changing these values. For Docker deployments, supply
+`--build-arg NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID=...` when building the image; the
+public client ID is embedded at build time. Never put a Google client secret in
+any `NEXT_PUBLIC_*` variable.
+
+### Authentication mode
+
+The web equivalent of mobile's `EXPO_PUBLIC_AUTH_MODE` is
+`NEXT_PUBLIC_AUTH_MODE`:
+
+- `social_only`: Google login and registration for Host and Business accounts.
+  Email/password login, manual registration, email verification, and resend-code
+  calls are hidden and blocked by the browser API layer.
+- `mixed`: social and email/password authentication for local testing.
+  Like mobile, `development` is also treated as mixed mode.
+
+Local development defaults to `mixed`. Production builds and Docker default to
+`social_only`. Set `NEXT_PUBLIC_AUTH_MODE=social_only` for production and keep it
+aligned with the services backend's `AUTH_MODE=social_only`. The backend remains
+responsible for enforcing its authentication policy. An explicit `mixed` override
+is available for testing a production build against a development backend.
+
+This public flag and `NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID` are embedded at build time.
+Rebuild/redeploy after changes; runtime container environment changes do not alter
+the browser bundle. Docker supports `--build-arg NEXT_PUBLIC_AUTH_MODE=social_only`.
+
+### Vendor profile slugs
+
+Profile links use the service's persistent `slug`, for example
+`/vendors/nihi-cakes-a1b2c3d4e5f6`. Names can change without changing the URL.
+Existing numeric profile links redirect permanently to the slug, retaining search
+and inquiry parameters. All catalog, review, and inquiry API calls still use the
+numeric `service_id` from the resolved profile.
+
+Deploy the services migration `20261104_service_slugs` before the updated API,
+then deploy this webapp. Existing services are backfilled with name-and-ID slugs;
+new services receive name-and-random-suffix slugs. Neither requires users to edit
+existing services. Numeric links remain supported for older mobile clients.
+
+The sitemap accepts `PUBLIC_VENDOR_SERVICE_SLUGS` (comma separated). Existing
+`PUBLIC_VENDOR_SERVICE_IDS` are resolved to slugs when an API base URL is configured.

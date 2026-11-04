@@ -43,9 +43,9 @@ function normalizeDateTimeLocal(value) {
   return new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
 }
 
-export default function CreateEventPage() {
+export default function CreateEventPage({ returnTo = "" }) {
   const navigate = useNavigate();
-  const { auth, isAuthenticated } = useAuth();
+  const { auth, isAuthenticated, authReady } = useAuth();
   const isEventPlanner = Boolean(auth?.isEventPlanner);
   const [eventTypes, setEventTypes] = useState([]);
   const [serviceTypes, setServiceTypes] = useState([]);
@@ -76,22 +76,22 @@ export default function CreateEventPage() {
 
   const formFieldSx = {
     "& .MuiInputLabel-root": {
-      color: "rgba(230,231,255,0.74)",
+      color: "var(--eez-ink-9)",
     },
     "& .MuiInputLabel-root.Mui-focused": {
-      color: "#B7C1FF",
+      color: "var(--eez-ink-10)",
       fontWeight: 700,
     },
     "& .MuiInputLabel-root.MuiInputLabel-shrink": {
-      color: "#A9B4FF",
+      color: "var(--eez-ink-11)",
     },
     "& .MuiOutlinedInput-root": {
-      backgroundColor: "rgba(15,22,86,0.52)",
+      backgroundColor: "var(--eez-surface-23)",
       "& fieldset": {
-        borderColor: "rgba(120,147,255,0.34)",
+        borderColor: "var(--eez-outline-2)",
       },
       "&:hover fieldset": {
-        borderColor: "rgba(150,171,255,0.54)",
+        borderColor: "var(--eez-outline-6)",
       },
       "&.Mui-focused fieldset": {
         borderColor: "#4752FF",
@@ -239,8 +239,9 @@ export default function CreateEventPage() {
 
     setSubmitting(true);
     try {
+      let createdEvent;
       if (isEventPlanner) {
-        await createPlannerEventForClient({
+        createdEvent = await createPlannerEventForClient({
           ...payload,
           client_email: clientData.email.trim().toLowerCase(),
           first_name: clientData.first_name,
@@ -248,7 +249,14 @@ export default function CreateEventPage() {
           phone: clientData.phone,
         });
       } else {
-        await createClientEvent(payload);
+        createdEvent = await createClientEvent(payload);
+      }
+      if (returnTo) {
+        const target = new URL(returnTo, window.location.origin);
+        const eventId = createdEvent?.event_id || createdEvent?.event?.event_id;
+        if (eventId) target.searchParams.set("inquiryEvent", String(eventId));
+        navigate(`${target.pathname}${target.search}`, { replace: true });
+        return;
       }
       setSuccessMessage("Event created successfully.");
       setTimeout(() => {
@@ -261,8 +269,10 @@ export default function CreateEventPage() {
     }
   };
 
+  if (!authReady) return <Stack alignItems="center" sx={{ py: 6 }}><CircularProgress /></Stack>;
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    const next = `/events/new${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`;
+    return <Navigate to={`/login?account=client&next=${encodeURIComponent(next)}`} replace />;
   }
 
   if (auth?.userType !== "client") {
@@ -304,8 +314,8 @@ export default function CreateEventPage() {
               <Paper
                 sx={{
                   p: 3,
-                  border: "1px solid rgba(120,147,255,0.18)",
-                  backgroundColor: "rgba(20,29,104,0.72)",
+                  border: "var(--eez-border-3)",
+                  backgroundColor: "var(--eez-surface-24)",
                 }}
               >
                 <Stack spacing={2}>
@@ -382,8 +392,8 @@ export default function CreateEventPage() {
             <Paper
               sx={{
                 p: 3,
-                border: "1px solid rgba(120,147,255,0.18)",
-                backgroundColor: "rgba(20,29,104,0.72)",
+                border: "var(--eez-border-3)",
+                backgroundColor: "var(--eez-surface-24)",
               }}
             >
               <Stack spacing={2.25}>
@@ -489,8 +499,8 @@ export default function CreateEventPage() {
             <Paper
               sx={{
                 p: 3,
-                border: "1px solid rgba(120,147,255,0.18)",
-                backgroundColor: "rgba(20,29,104,0.72)",
+                border: "var(--eez-border-3)",
+                backgroundColor: "var(--eez-surface-24)",
               }}
             >
               <Stack spacing={2}>
@@ -529,13 +539,13 @@ export default function CreateEventPage() {
                         sx={{
                           background: isSelected
                             ? "linear-gradient(180deg, #4854FF 0%, #2E35E8 100%)"
-                            : "rgba(255,255,255,0.06)",
+                            : "var(--eez-surface-25)",
                           color: isSelected ? "common.white" : "text.primary",
                           borderColor: isSelected
                             ? "#7F8CFF"
                             : isCommon
                               ? "rgba(255,209,102,0.45)"
-                              : "rgba(120,147,255,0.3)",
+                              : "var(--eez-outline-7)",
                           boxShadow: isSelected
                             ? "0 10px 22px rgba(46,53,232,0.28), inset 0 1px 0 rgba(255,255,255,0.12)"
                             : "none",
@@ -571,8 +581,8 @@ export default function CreateEventPage() {
             <Paper
               sx={{
                 p: 3,
-                border: "1px solid rgba(120,147,255,0.18)",
-                backgroundColor: "rgba(20,29,104,0.72)",
+                border: "var(--eez-border-3)",
+                backgroundColor: "var(--eez-surface-24)",
               }}
             >
               <Stack spacing={1.1}>

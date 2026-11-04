@@ -1,4 +1,9 @@
+import { safeReturnPath } from "../../lib/returnPath";
 import PageFrame from "../../components/PageFrame";
-import LoginPage from "../../pages/LoginPage";
+import LoginPage from "../../views/LoginPage";
 export const metadata={title:"Login",robots:{index:false,follow:false}};
-export default function Page(){return <PageFrame><LoginPage/></PageFrame>}
+export default async function Page({ searchParams }) {
+  const query = await searchParams;
+  const account = query?.account;
+  return <PageFrame><LoginPage initialLoginType={account === "vendor" ? "vendor" : "client"} initialNextPath={safeReturnPath(query?.next)} /></PageFrame>;
+}

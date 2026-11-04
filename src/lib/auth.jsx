@@ -1,6 +1,7 @@
 "use client";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
+  registerWithGoogle as registerGoogleAccount,
   clearStoredAuth,
   getStoredAuth,
   loginClient,
@@ -19,12 +20,14 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [auth, setAuth] = useState(null);
+  const [authReady, setAuthReady] = useState(false);
 
-  useEffect(() => { setAuth(getStoredAuth()); }, []);
+  useEffect(() => { setAuth(getStoredAuth()); setAuthReady(true); }, []);
 
   const value = useMemo(
     () => ({
       auth,
+      authReady,
       isAuthenticated: Boolean(auth?.token),
       async login({ loginType, email, password }) {
         const data =
@@ -67,6 +70,19 @@ export function AuthProvider({ children }) {
         setStoredAuth(nextAuth);
         return data;
       },
+      async registerWithGoogle(payload) {
+        const data = await registerGoogleAccount(payload);
+        if (!data?.token) throw new Error("Account registration did not return a session. Please sign in.");
+        const nextAuth = {
+          token: data.token, userType: data.userType || payload.user_type,
+          userEmail: data.userEmail || "", userFirstName: data.userFirstName || "",
+          userLastName: data.userLastName || "", userPhone: data.userPhone || "",
+          isEventPlanner: Boolean(data.is_event_planner),
+        };
+        setStoredAuth(nextAuth);
+        setAuth(nextAuth);
+        return data;
+      },
       async logout() {
         try {
           if (auth?.userType === "vendor") {
@@ -92,7 +108,7 @@ export function AuthProvider({ children }) {
           : resendClientEmailCode(email);
       },
     }),
-    [auth],
+    [auth, authReady],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
