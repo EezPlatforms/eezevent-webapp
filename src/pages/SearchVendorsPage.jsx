@@ -1,3 +1,4 @@
+"use client";
 import FilterListRoundedIcon from "@mui/icons-material/FilterListRounded";
 import LocationOnRoundedIcon from "@mui/icons-material/LocationOnRounded";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
