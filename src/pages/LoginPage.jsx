@@ -1,3 +1,4 @@
+"use client";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import EmailRoundedIcon from "@mui/icons-material/EmailRounded";
 import GoogleIcon from "@mui/icons-material/Google";
