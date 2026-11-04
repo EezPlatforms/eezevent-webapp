@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { CssBaseline, ThemeProvider } from "@mui/material";
-import { HashRouter } from "react-router-dom";
+import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import { AuthProvider } from "./lib/auth";
 import { eezEventTheme } from "./theme";
@@ -12,7 +12,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <ThemeProvider theme={eezEventTheme}>
       <CssBaseline />
       <AuthProvider>
-        <HashRouter>
+        <BrowserRouter>
           <App />
         </HashRouter>
       </AuthProvider>
