@@ -13,7 +13,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useMemo, useState } from "react";
-import { Link as RouterLink, useLocation } from "react-router-dom";
+import { RouterLink, useLocation } from "../lib/navigation";
 import logo from "../../assets/eezevent-just-logo.png";
 import { navItems } from "../data/content";
 import { useAuth } from "../lib/auth";
@@ -59,7 +59,7 @@ export default function AppShell({ children }) {
             <Stack direction="row" spacing={1.5} alignItems="center">
               <Box
                 component="img"
-                src={logo}
+                src={logo.src}
                 alt="EezEvent logo"
                 sx={{
                   width: 52,
