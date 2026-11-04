@@ -1,3 +1,4 @@
+"use client";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import HelpOutlineRoundedIcon from "@mui/icons-material/HelpOutlineRounded";
 import {
