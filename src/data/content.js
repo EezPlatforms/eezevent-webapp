@@ -29,19 +29,19 @@ export const launchCards = [
   {
     title: "Unified Event Workspace",
     body: "Manage event details, service needs, and communication from a single place.",
-    image: workspaceImage,
+    image: workspaceImage.src,
     alt: "Event planning workspace",
   },
   {
     title: "Structured Inquiry Pipeline",
     body: "Track outreach, responses, and quote progress with clear status visibility.",
-    image: pipelineImage,
+    image: pipelineImage.src,
     alt: "Inquiry pipeline overview",
   },
   {
     title: "Vendor Collaboration Tools",
     body: "Support faster follow-ups with messaging, files, and timeline context.",
-    image: vendorImage,
+    image: vendorImage.src,
     alt: "Vendor collaboration",
   },
 ];
