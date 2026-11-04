@@ -1,4 +1,6 @@
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import { Button } from "@mui/material";
+import { Link as RouterLink } from "react-router-dom";
 import EmailRoundedIcon from "@mui/icons-material/EmailRounded";
 import InstagramIcon from "@mui/icons-material/Instagram";
 import LanguageRoundedIcon from "@mui/icons-material/LanguageRounded";
@@ -172,6 +174,7 @@ export default function VendorDetailsDialog({ open, item, typeLabel, onClose }) 
         </IconButton>
       </DialogTitle>
       <DialogContent sx={{ pt: 1 }}>
+        {item?.service?.service_id && <Button component={RouterLink} to={`/vendors/${item.service.service_id}`} onClick={onClose} variant="contained" sx={{ mb: 2 }}>Open shareable profile & reviews</Button>}
         {loading ? (
           <Stack alignItems="center" justifyContent="center" sx={{ py: 8 }}>
             <CircularProgress color="primary" />
