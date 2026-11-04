@@ -1,15 +1,15 @@
+"use client";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import VendorProfileSeo from "../components/VendorProfileSeo";
+
+
 import { Alert, Box, Button, Chip, CircularProgress, Divider, Paper, Rating, Stack, Typography } from "@mui/material";
 import ShareRoundedIcon from "@mui/icons-material/ShareRounded";
 import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
 import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import { fetchPublicServiceProfile, fetchServiceImages, fetchServiceCatalogItems, fetchVendorReviews } from "../lib/api";
 
-export default function VendorProfilePage() {
-  const { serviceId } = useParams();
-  const [profile, setProfile] = useState(null);
+export default function VendorProfilePage({serviceId,initialProfile}) {
+  const [profile, setProfile] = useState(initialProfile || null);
   const [images, setImages] = useState([]);
   const [catalog, setCatalog] = useState([]);
   const [reviews, setReviews] = useState([]);
@@ -28,12 +28,12 @@ export default function VendorProfilePage() {
     let active = true;
     setLoading(true);
     setError("");
-    setProfile(null);
+    setProfile(initialProfile || null);
     setReviews([]);
     setOffset(0);
     if (!validId) { setError("Invalid vendor profile link."); setLoading(false); return; }
     Promise.all([
-      fetchPublicServiceProfile(serviceId),
+      initialProfile ? Promise.resolve(initialProfile) : fetchPublicServiceProfile(serviceId),
       fetchServiceImages(serviceId),
       fetchServiceCatalogItems(serviceId),
     ]).then(([p, i, c]) => {
@@ -52,7 +52,7 @@ export default function VendorProfilePage() {
       setOffset(data.reviews.length);
     }).catch(e => { if (active) setReviewError(e.message); });
     return () => { active = false; };
-  }, [serviceId, validId]);
+  }, [serviceId, validId, initialProfile]);
 
   const loadMore = async () => {
     setMoreLoading(true);
@@ -84,7 +84,7 @@ export default function VendorProfilePage() {
 
   if (loading) return <Stack alignItems="center" sx={{ py: 10 }}><CircularProgress /></Stack>;
   if (error) return <Alert severity="error">{error}</Alert>;
-  return <><VendorProfileSeo service={service} business={business} images={images} reviewCount={reviewCount} averageRating={average} /><Stack spacing={3}>
+  return <Stack spacing={3}>
     <Paper sx={card}>
       <Stack spacing={2}>
         <Chip label={service.type_name || service.type || "EezEvent Vendor"} sx={{ alignSelf: "flex-start" }} />
@@ -133,5 +133,5 @@ export default function VendorProfilePage() {
       </Box>)}</Stack>
       {offset < reviewCount && <Button sx={{ mt: 2 }} onClick={loadMore} disabled={moreLoading}>{moreLoading ? "Loading..." : "Load more reviews"}</Button>}
     </Paper>
-  </Stack></>;
+  </Stack>;
 }
