@@ -1,0 +1,1 @@
+export default function robots(){return {rules:[{userAgent:"*",allow:"/",disallow:["/events","/login"]}],sitemap:"https://eezevent.com/sitemap.xml"};}
