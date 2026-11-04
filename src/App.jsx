@@ -6,6 +6,7 @@ import LoginPage from "./pages/LoginPage";
 import CreateEventPage from "./pages/CreateEventPage";
 import EventsPage from "./pages/EventsPage";
 import SearchVendorsPage from "./pages/SearchVendorsPage";
+import VendorProfilePage from "./pages/VendorProfilePage";
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/help" element={<HelpPage />} />
         <Route path="/search-vendors" element={<SearchVendorsPage />} />
+        <Route path="/vendors/:serviceId" element={<VendorProfilePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AppShell>
