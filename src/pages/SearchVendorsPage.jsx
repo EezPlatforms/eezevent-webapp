@@ -16,7 +16,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams } from "../lib/navigation";
 import VendorDetailsDialog from "../components/VendorDetailsDialog";
 import { fetchServicesByZipcode, fetchServiceTypes } from "../lib/api";
 import { getServiceTypeImage, normalizeServiceTypeKey } from "../lib/serviceTypeImages";
