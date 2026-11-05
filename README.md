@@ -74,3 +74,29 @@ existing services. Numeric links remain supported for older mobile clients.
 
 The sitemap accepts `PUBLIC_VENDOR_SERVICE_SLUGS` (comma separated). Existing
 `PUBLIC_VENDOR_SERVICE_IDS` are resolved to slugs when an API base URL is configured.
+
+
+## Deploy to AWS dev
+
+`.github/workflows/deploy-dev.yml` deploys pushes to `dev` to
+`https://webapp-dev.eezevent.com`; manual dispatch is also restricted to `dev`.
+It runs tests, builds an amd64 image, pushes it to ECR, and deploys by image digest
+to `eezevent-dev-webapp-service` in `eezevent-dev-cluster` (account `250830191532`,
+region `us-east-2`). It waits for stability and fails if ECS rolls back the release.
+
+Follow the [dev deployment guide](../eezevent-infra/live/dev/webapp/README.md)
+for routine releases, one-time bootstrap, verification, and rollbacks.
+
+Before the first run, bootstrap the service with `eezevent-infra/live/dev/webapp`
+and apply its GitHub OIDC deployment role. In this repository's GitHub settings,
+create an environment named **development**, restrict it to the **dev** branch,
+and configure these environment variables:
+
+- `AWS_ROLE_ARN`: infra output `github_deploy_role_arn`.
+- `NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID`: the dev Google OAuth web client ID.
+
+No AWS access-key secrets are required. The workflow uses
+`https://dev-api.eezevent.com` and builds with `social_only` authentication.
+Complete the GoDaddy DNS, backend CORS, and Google OAuth origin setup described
+in the infra deployment guide before browser testing. Subsequent GitHub deployments
+own the service's task-definition revision; Terraform retains infrastructure ownership.
