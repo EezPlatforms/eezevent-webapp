@@ -8,13 +8,14 @@ import logo from "../../assets/eezevent-just-logo.png";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import VisibilityOffRoundedIcon from "@mui/icons-material/VisibilityOffRounded";
 import { isSocialOnlyAuth as socialOnly } from "../lib/authMode";
+import AppleSignInButton, { appleSignInConfigured } from "../components/AppleSignInButton";
 import GoogleRegistrationButton from "../components/GoogleRegistrationButton";
 import { fetchLegalDocument, registerAccount } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { Navigate, RouterLink } from "../lib/navigation";
 
 export default function RegistrationPage({ nextPath = "/" }) {
-  const { isAuthenticated, validateEmail, resendValidationCode, registerWithGoogle } = useAuth();
+  const { isAuthenticated, validateEmail, resendValidationCode, registerWithGoogle, registerWithApple } = useAuth();
   const [accountType, setAccountType] = useState("client");
   const [form, setForm] = useState({ first_name: "", last_name: "", email: "", phone: "", password: "", confirmPassword: "", is_event_planner: false });
   const [showPassword, setShowPassword] = useState(false);
@@ -26,6 +27,7 @@ export default function RegistrationPage({ nextPath = "/" }) {
   const [acceptedAgreement, setAcceptedAgreement] = useState(false);
   const [stage, setStage] = useState("register");
   const [code, setCode] = useState("");
+  const [appleBusy, setAppleBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   const [resending, setResending] = useState(false);
   const [error, setError] = useState("");
@@ -101,15 +103,16 @@ export default function RegistrationPage({ nextPath = "/" }) {
     finally { setResending(false); }
   };
 
-  const googleRegister = async response => {
+  const socialRegister = async (response, provider = "Google") => {
     if (busy) return;
     setError("");
-    if (!response.credential || !documents || !acceptedPrivacy || !acceptedAgreement) { setError("Accept the agreements before signing up with Google."); return; }
+    if (!(response.credential || response.authorization?.id_token) || !documents || !acceptedPrivacy || !acceptedAgreement) { setError(`Accept the agreements before signing up with ${provider}.`); return; }
     const acceptedAt = new Date().toISOString();
     setBusy(true);
     try {
-      await registerWithGoogle({
-        id_token: response.credential, user_type: accountType,
+      await (provider === "Apple" ? registerWithApple : registerWithGoogle)({
+        id_token: response.credential || response.authorization?.id_token, user_type: accountType,
+        ...(provider === "Apple" ? { email: response.user?.email, first_name: response.user?.name?.firstName, last_name: response.user?.name?.lastName } : {}),
         accepted_terms_at: acceptedAt, accepted_terms_version: documents.privacy.version,
         ...(accountType === "vendor" ? {
           accepted_vendor_agreement_at: acceptedAt, accepted_vendor_agreement_version: documents.agreement.version,
@@ -118,7 +121,7 @@ export default function RegistrationPage({ nextPath = "/" }) {
           accepted_customer_terms_at: acceptedAt, accepted_customer_terms_version: documents.agreement.version,
         }),
       });
-    } catch (err) { setError(err.message || "Google sign-up failed. Please try again."); }
+    } catch (err) { setError(err.message || `${provider} sign-up failed. Please try again.`); }
     finally { setBusy(false); }
   };
 
@@ -133,7 +136,7 @@ export default function RegistrationPage({ nextPath = "/" }) {
       {error && <Alert severity="error">{error}</Alert>}
       {notice && <Alert severity="success">{notice}</Alert>}
       {stage === "register" ? <>
-        <ToggleButtonGroup exclusive fullWidth value={accountType} disabled={busy} onChange={(_, value) => { if (value) { setAccountType(value); setError(""); } }} aria-label="Account type"
+        <ToggleButtonGroup exclusive fullWidth value={accountType} disabled={busy || appleBusy} onChange={(_, value) => { if (value) { setAccountType(value); setError(""); } }} aria-label="Account type"
           sx={{
             gap: 1.5,
             "& .MuiToggleButtonGroup-grouped": { border: "1px solid", borderColor: "divider", borderRadius: "12px !important", m: "0 !important" },
@@ -151,34 +154,35 @@ export default function RegistrationPage({ nextPath = "/" }) {
         <Stack component="form" onSubmit={submit} spacing={2}>
           {!socialOnly && <>
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
-            <TextField label="First name" name="first_name" value={form.first_name} onChange={update} required autoComplete="given-name" disabled={busy} inputProps={{ maxLength: 100 }} />
-            <TextField label="Last name" name="last_name" value={form.last_name} onChange={update} required autoComplete="family-name" disabled={busy} inputProps={{ maxLength: 100 }} />
+            <TextField label="First name" name="first_name" value={form.first_name} onChange={update} required autoComplete="given-name" disabled={busy || appleBusy} inputProps={{ maxLength: 100 }} />
+            <TextField label="Last name" name="last_name" value={form.last_name} onChange={update} required autoComplete="family-name" disabled={busy || appleBusy} inputProps={{ maxLength: 100 }} />
           </Box>
-          <TextField label="Email" name="email" type="email" value={form.email} onChange={update} required autoComplete="email" disabled={busy} />
-          <TextField label={accountType === "vendor" ? "Phone number" : "Phone number (optional)"} name="phone" type="tel" value={form.phone} onChange={update} required={accountType === "vendor"} autoComplete="tel" disabled={busy} />
-          <TextField label="Password" name="password" type={showPassword ? "text" : "password"} value={form.password} onChange={update} required autoComplete="new-password" disabled={busy} helperText="At least 8 characters." inputProps={{ minLength: 8 }} InputProps={{ endAdornment: <InputAdornment position="end"><IconButton type="button" onClick={() => setShowPassword(value => !value)} aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? <VisibilityOffRoundedIcon /> : <VisibilityRoundedIcon />}</IconButton></InputAdornment> }} />
-          <TextField label="Confirm password" name="confirmPassword" type={showPassword ? "text" : "password"} value={form.confirmPassword} onChange={update} required autoComplete="new-password" disabled={busy} />
+          <TextField label="Email" name="email" type="email" value={form.email} onChange={update} required autoComplete="email" disabled={busy || appleBusy} />
+          <TextField label={accountType === "vendor" ? "Phone number" : "Phone number (optional)"} name="phone" type="tel" value={form.phone} onChange={update} required={accountType === "vendor"} autoComplete="tel" disabled={busy || appleBusy} />
+          <TextField label="Password" name="password" type={showPassword ? "text" : "password"} value={form.password} onChange={update} required autoComplete="new-password" disabled={busy || appleBusy} helperText="At least 8 characters." inputProps={{ minLength: 8 }} InputProps={{ endAdornment: <InputAdornment position="end"><IconButton type="button" onClick={() => setShowPassword(value => !value)} aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? <VisibilityOffRoundedIcon /> : <VisibilityRoundedIcon />}</IconButton></InputAdornment> }} />
+          <TextField label="Confirm password" name="confirmPassword" type={showPassword ? "text" : "password"} value={form.confirmPassword} onChange={update} required autoComplete="new-password" disabled={busy || appleBusy} />
           </>}
-          {accountType === "client" && <FormControlLabel control={<Checkbox checked={form.is_event_planner} onChange={event => setForm(current => ({ ...current, is_event_planner: event.target.checked }))} size="small" disabled={busy} />} sx={{ "& .MuiFormControlLabel-label": { fontSize: 14 } }} label="I’m an event planner" />}
+          {accountType === "client" && <FormControlLabel control={<Checkbox checked={form.is_event_planner} onChange={event => setForm(current => ({ ...current, is_event_planner: event.target.checked }))} size="small" disabled={busy || appleBusy} />} sx={{ "& .MuiFormControlLabel-label": { fontSize: 14 } }} label="I’m an event planner" />}
           <Divider />
           {documentLoading && <Stack direction="row" spacing={1} alignItems="center"><CircularProgress size={18} /><Typography variant="body2">Loading current agreements…</Typography></Stack>}
           {documentError && <Alert severity="warning" action={<Button color="inherit" onClick={() => setRetry(value => value + 1)}>Retry</Button>}>{documentError}</Alert>}
           {documents && <Stack spacing={1.5} sx={{ p: 2, border: "1px solid", borderColor: "divider", borderRadius: 2, bgcolor: theme => alpha(theme.palette.primary.main, .025) }}>
             <Typography variant="body2" fontWeight={600}>Before you continue</Typography>
-            <FormControlLabel sx={{ m: 0, alignItems: "flex-start", "& .MuiFormControlLabel-label": { fontSize: 14, lineHeight: 1.7, pt: .25 } }} control={<Checkbox size="small" required checked={acceptedPrivacy} onChange={event => setAcceptedPrivacy(event.target.checked)} disabled={busy} sx={{ p: .5, mr: 1 }} />} label={<>
+            <FormControlLabel sx={{ m: 0, alignItems: "flex-start", "& .MuiFormControlLabel-label": { fontSize: 14, lineHeight: 1.7, pt: .25 } }} control={<Checkbox size="small" required checked={acceptedPrivacy} onChange={event => setAcceptedPrivacy(event.target.checked)} disabled={busy || appleBusy} sx={{ p: .5, mr: 1 }} />} label={<>
               I accept the <Link href="https://eezevent.com/agreements/privacy-policy.html" target="_blank" rel="noopener noreferrer" aria-label="Privacy Policy (opens in a new tab)" onClick={event => event.stopPropagation()} sx={{ fontSize: "inherit", lineHeight: "inherit", color: "inherit", fontWeight: 600, textUnderlineOffset: 3 }}>Privacy Policy</Link>.
             </>} />
-            <FormControlLabel sx={{ m: 0, alignItems: "flex-start", "& .MuiFormControlLabel-label": { fontSize: 14, lineHeight: 1.7, pt: .25 } }} control={<Checkbox size="small" required checked={acceptedAgreement} onChange={event => setAcceptedAgreement(event.target.checked)} disabled={busy} sx={{ p: .5, mr: 1 }} />} label={<>
+            <FormControlLabel sx={{ m: 0, alignItems: "flex-start", "& .MuiFormControlLabel-label": { fontSize: 14, lineHeight: 1.7, pt: .25 } }} control={<Checkbox size="small" required checked={acceptedAgreement} onChange={event => setAcceptedAgreement(event.target.checked)} disabled={busy || appleBusy} sx={{ p: .5, mr: 1 }} />} label={<>
               I accept the <Link href={accountType === "vendor" ? "https://eezevent.com/agreements/vendor-agreement.html" : "https://eezevent.com/agreements/customer-agreement.html"} target="_blank" rel="noopener noreferrer" aria-label={`${accountType === "vendor" ? "Vendor" : "Customer"} Agreement (opens in a new tab)`} onClick={event => event.stopPropagation()} sx={{ fontSize: "inherit", lineHeight: "inherit", color: "inherit", fontWeight: 600, textUnderlineOffset: 3 }}>{accountType === "vendor" ? "Vendor Agreement" : "Customer Agreement"}</Link>.
             </>} />
           </Stack>}
-          {!socialOnly && <Button type="submit" variant="contained" size="large" disabled={busy || !documents || !acceptedPrivacy || !acceptedAgreement}>{busy ? "Creating account…" : `Create ${label} account`}</Button>}
+          {!socialOnly && <Button type="submit" variant="contained" size="large" disabled={busy || appleBusy || !documents || !acceptedPrivacy || !acceptedAgreement}>{busy ? "Creating account…" : `Create ${label} account`}</Button>}
           {googleConfigured ? <>
             {!socialOnly && <Divider>or sign up with Google</Divider>}
             {documents && acceptedPrivacy && acceptedAgreement
-              ? <GoogleRegistrationButton onCredential={googleRegister} onError={setError} disabled={busy} />
+              ? <GoogleRegistrationButton onCredential={response => socialRegister(response)} onError={setError} disabled={busy || appleBusy} />
               : <Typography variant="caption" color="text.secondary" sx={{ textAlign: "center", display: "block", lineHeight: 1.6 }}>Accept both agreements to continue with Google.</Typography>}
-          </> : socialOnly ? <Alert severity="info">Account creation is temporarily unavailable. Please try again later.</Alert> : null}
+          </> : socialOnly && !appleSignInConfigured ? <Alert severity="info">Account creation is temporarily unavailable. Please try again later.</Alert> : null}
+          <AppleSignInButton disabled={busy || appleBusy || !documents || !acceptedPrivacy || !acceptedAgreement} onBusyChange={setAppleBusy} onError={setError} onCredential={response => socialRegister(response, "Apple")} />
         </Stack>
       </> : stage === "verify" ? <Stack component="form" onSubmit={verify} spacing={2}>
         <Typography color="text.secondary">Enter the 6-digit verification code sent to your email address. You can request a new code if it doesn’t arrive.</Typography>

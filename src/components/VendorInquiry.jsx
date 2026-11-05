@@ -53,7 +53,7 @@ export default function VendorInquiry({ serviceSlug, serviceId, serviceName, ret
   };
   const send = async event => {
     event.preventDefault();
-    if (sending || sent) return;
+    if (!authReady || !isHost || sending || sent) return;
     if (!events.some(item => String(item.event_id) === String(eventId))) { setError("Choose an event before sending your inquiry."); return; }
     setSending(true); setError("");
     try {
@@ -63,6 +63,8 @@ export default function VendorInquiry({ serviceSlug, serviceId, serviceName, ret
     } catch (err) { setError(err.message || "Unable to send your inquiry. Please try again."); }
     finally { setSending(false); }
   };
+  if (!authReady || (isAuthenticated && !isHost)) return null;
+
   return <>
     <Paper component="section" aria-label="Inquire about this vendor" variant="outlined" sx={{ p: { xs: 2, sm: 2.5 }, borderRadius: 2.5 }}>
       <Stack direction={{ xs: "column", sm: "row" }} gap={2} alignItems={{ xs: "stretch", sm: "center" }} justifyContent="space-between">

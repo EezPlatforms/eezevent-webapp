@@ -2,6 +2,8 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
   registerWithGoogle as registerGoogleAccount,
+  registerWithApple as registerAppleAccount,
+  loginWithApple as loginAppleAccount,
   clearStoredAuth,
   getStoredAuth,
   loginClient,
@@ -72,6 +74,37 @@ export function AuthProvider({ children }) {
       },
       async registerWithGoogle(payload) {
         const data = await registerGoogleAccount(payload);
+        if (!data?.token) throw new Error("Account registration did not return a session. Please sign in.");
+        const nextAuth = {
+          token: data.token, userType: data.userType || payload.user_type,
+          userEmail: data.userEmail || "", userFirstName: data.userFirstName || "",
+          userLastName: data.userLastName || "", userPhone: data.userPhone || "",
+          isEventPlanner: Boolean(data.is_event_planner),
+        };
+        setStoredAuth(nextAuth);
+        setAuth(nextAuth);
+        return data;
+      },
+      async loginWithApple({ loginType, idToken }) {
+        const data = await loginAppleAccount({ idToken, userType: loginType });
+        if (!data?.token) throw new Error("Apple sign-in did not return a session. Please try again.");
+
+        const nextAuth = {
+          token: data?.token || "",
+          userType: data?.userType || loginType,
+          userEmail: data?.userEmail || "",
+          userFirstName: data?.userFirstName || "",
+          userLastName: data?.userLastName || "",
+          userPhone: data?.userPhone || "",
+          isEventPlanner: Boolean(data?.is_event_planner),
+        };
+
+        setAuth(nextAuth);
+        setStoredAuth(nextAuth);
+        return data;
+      },
+      async registerWithApple(payload) {
+        const data = await registerAppleAccount(payload);
         if (!data?.token) throw new Error("Account registration did not return a session. Please sign in.");
         const nextAuth = {
           token: data.token, userType: data.userType || payload.user_type,

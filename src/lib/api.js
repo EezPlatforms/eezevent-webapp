@@ -337,3 +337,13 @@ export const sendVendorInquiry = async ({ serviceId, eventId, message }) => {
     body: JSON.stringify({ vendor_id: Number(serviceId), event_id: Number(eventId), message: String(message || "").trim() }),
   });
 };
+
+export const loginWithApple = ({ idToken, userType }) => requestJson("/auth/apple/login", {
+  method: "POST", headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ id_token: idToken, provider: "apple", user_type: userType, client_platform: "web" }),
+});
+
+export const registerWithApple = payload => requestJson("/auth/apple/register", {
+  method: "POST", headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ ...payload, provider: "apple", client_platform: "web" }),
+});
