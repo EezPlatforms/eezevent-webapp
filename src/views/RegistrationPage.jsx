@@ -4,7 +4,7 @@ import { Alert, Box, Button, Checkbox, CircularProgress, Divider, FormControlLab
 import { alpha } from "@mui/material/styles";
 import PersonOutlineRoundedIcon from "@mui/icons-material/PersonOutlineRounded";
 import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
-import logo from "../../assets/eezevent-just-logo.png";
+import { BrandLogo } from "../components/BrandIdentity";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import VisibilityOffRoundedIcon from "@mui/icons-material/VisibilityOffRounded";
 import { isSocialOnlyAuth as socialOnly } from "../lib/authMode";
@@ -129,7 +129,7 @@ export default function RegistrationPage({ nextPath = "/" }) {
   return <Box sx={{ minHeight: "calc(100dvh - 220px)", display: "grid", placeItems: "center", py: { xs: 1, md: 3 } }}><Paper sx={{ width: "100%", maxWidth: 460, mx: "auto", p: { xs: 3, sm: 4.5 }, border: "1px solid", borderColor: "divider", borderRadius: 3, boxShadow: theme => theme.palette.mode === "light" ? "0 16px 48px rgba(24,36,59,0.08)" : "0 16px 48px rgba(0,0,0,0.18)" }}>
     <Stack spacing={2.5}>
       <Stack spacing={1.5} alignItems="center" sx={{ textAlign: "center", mb: .5 }}>
-        <Box component="img" src={logo.src} alt="EezEvent" sx={{ width: 48, height: 48, borderRadius: 1.5, mb: .5 }} />
+        <BrandLogo />
         <Typography component="h1" sx={{ fontSize: { xs: 29, sm: 32 }, fontWeight: 700, lineHeight: 1.2, letterSpacing: "-.025em" }}>{stage === "verify" ? "Check your email" : stage === "complete" ? "You’re all set" : "Create your account"}</Typography>
         <Typography color="text.secondary" sx={{ fontSize: 16 }}>{stage === "register" ? "Choose how you’ll use EezEvent." : `${label} account · ${form.email}`}</Typography>
       </Stack>

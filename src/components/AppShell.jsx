@@ -29,7 +29,7 @@ import {
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { RouterLink, useLocation } from "../lib/navigation";
-import logo from "../../assets/eezevent-just-logo.png";
+import BrandIdentity from "./BrandIdentity";
 import { navItems } from "../data/content";
 import { useAuth } from "../lib/auth";
 
@@ -89,43 +89,7 @@ export default function AppShell({ children, contentSx }) {
       >
         <Container maxWidth="lg">
           <Toolbar disableGutters sx={{ minHeight: 84, gap: { xs: 1, sm: 2 }, justifyContent: "space-between" }}>
-            <Stack
-              component={RouterLink}
-              to="/"
-              aria-label="EezEvent home"
-              direction="row"
-              spacing={1.5}
-              alignItems="center"
-              sx={{
-                textDecoration: "none",
-                color: "text.primary",
-                borderRadius: 1,
-                "&:focus-visible": { outline: "3px solid", outlineColor: "primary.main", outlineOffset: 4 },
-              }}
-            >
-              <Box
-                component="img"
-                src={logo.src}
-                alt="EezEvent logo"
-                sx={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 0.5,
-                  p: 0.2,
-                  objectFit: "contain",
-                  backgroundColor: "var(--eez-surface-2)",
-                  border: "var(--eez-border-13)",
-                }}
-              />
-              <Box>
-                <Typography variant="h5" sx={{ lineHeight: 1, color: "text.primary" }}>
-                  EezEvent
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ display: { xs: "none", lg: "block" } }}>
-                  Event planning with operational discipline
-                </Typography>
-              </Box>
-            </Stack>
+            <BrandIdentity />
 
             <Stack direction="row" spacing={1} alignItems="center">
               {visibleNavItems.map((item) => {
