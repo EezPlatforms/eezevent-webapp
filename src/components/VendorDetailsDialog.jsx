@@ -1,4 +1,9 @@
+"use client";
+import { vendorProfilePath } from "../lib/vendorProfilePath";
+import { formatPrice } from "../lib/formatPrice";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import { Button } from "@mui/material";
+import { RouterLink } from "../lib/navigation";
 import EmailRoundedIcon from "@mui/icons-material/EmailRounded";
 import InstagramIcon from "@mui/icons-material/Instagram";
 import LanguageRoundedIcon from "@mui/icons-material/LanguageRounded";
@@ -26,14 +31,6 @@ import {
   fetchServiceCatalogItems,
   fetchServiceImages,
 } from "../lib/api";
-
-const formatPrice = (value) => {
-  if (!value) return "";
-  if (Number.isFinite(Number(value))) {
-    return `$${Number(value).toLocaleString()}`;
-  }
-  return String(value).trim().startsWith("$") ? String(value).trim() : `$${String(value).trim()}`;
-};
 
 const formatAddress = (service, business) =>
   [
@@ -148,9 +145,9 @@ export default function VendorDetailsDialog({ open, item, typeLabel, onClose }) 
       maxWidth="lg"
       PaperProps={{
         sx: {
-          border: "1px solid rgba(120,147,255,0.18)",
+          border: "var(--eez-border-3)",
           background:
-            "linear-gradient(180deg, rgba(15,26,109,0.98), rgba(7,11,42,0.98))",
+            "var(--eez-surface-27)",
           backdropFilter: "blur(16px)",
         },
       }}
@@ -172,6 +169,7 @@ export default function VendorDetailsDialog({ open, item, typeLabel, onClose }) 
         </IconButton>
       </DialogTitle>
       <DialogContent sx={{ pt: 1 }}>
+        {item?.service?.service_id && <Button component={RouterLink} to={vendorProfilePath(item.service)} onClick={onClose} variant="contained" sx={{ mb: 2 }}>Open shareable profile & reviews</Button>}
         {loading ? (
           <Stack alignItems="center" justifyContent="center" sx={{ py: 8 }}>
             <CircularProgress color="primary" />
@@ -212,7 +210,7 @@ export default function VendorDetailsDialog({ open, item, typeLabel, onClose }) 
                       height: { xs: 120, sm: 150, md: 140 },
                       objectFit: "cover",
                       borderRadius: 1.5,
-                      border: "1px solid rgba(120,147,255,0.18)",
+                      border: "var(--eez-border-3)",
                       boxShadow: "0 10px 18px rgba(8, 12, 46, 0.12)",
                     }}
                   />
@@ -231,8 +229,8 @@ export default function VendorDetailsDialog({ open, item, typeLabel, onClose }) 
                 <Paper
                   sx={{
                     p: 3,
-                    border: "1px solid rgba(120,147,255,0.16)",
-                    backgroundColor: "rgba(255,255,255,0.04)",
+                    border: "var(--eez-border-1)",
+                    backgroundColor: "var(--eez-surface-20)",
                   }}
                 >
                   <Stack spacing={1.5}>
@@ -246,8 +244,8 @@ export default function VendorDetailsDialog({ open, item, typeLabel, onClose }) 
                 <Paper
                   sx={{
                     p: 3,
-                    border: "1px solid rgba(120,147,255,0.16)",
-                    backgroundColor: "rgba(255,255,255,0.04)",
+                    border: "var(--eez-border-1)",
+                    backgroundColor: "var(--eez-surface-20)",
                   }}
                 >
                   <Stack spacing={1.5}>
@@ -314,8 +312,8 @@ export default function VendorDetailsDialog({ open, item, typeLabel, onClose }) 
                   <Paper
                     sx={{
                       p: 3,
-                      border: "1px solid rgba(120,147,255,0.16)",
-                      backgroundColor: "rgba(255,255,255,0.04)",
+                      border: "var(--eez-border-1)",
+                      backgroundColor: "var(--eez-surface-20)",
                     }}
                   >
                     <Stack spacing={1.5}>
@@ -342,8 +340,8 @@ export default function VendorDetailsDialog({ open, item, typeLabel, onClose }) 
                   <Paper
                     sx={{
                       p: 3,
-                      border: "1px solid rgba(120,147,255,0.16)",
-                      backgroundColor: "rgba(255,255,255,0.04)",
+                      border: "var(--eez-border-1)",
+                      backgroundColor: "var(--eez-surface-20)",
                     }}
                   >
                     <Stack spacing={1.5}>
@@ -353,8 +351,8 @@ export default function VendorDetailsDialog({ open, item, typeLabel, onClose }) 
                           key={catalogItem.id}
                           sx={{
                             p: 1.5,
-                            border: "1px solid rgba(120,147,255,0.14)",
-                            backgroundColor: "rgba(7,11,42,0.5)",
+                            border: "var(--eez-border-10)",
+                            backgroundColor: "var(--eez-surface-28)",
                           }}
                         >
                           <Stack spacing={1}>

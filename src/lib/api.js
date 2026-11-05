@@ -1,4 +1,8 @@
-const rawBaseUrl = String(import.meta.env.VITE_API_BASE_URL || "")
+import { isSocialOnlyAuth } from "./authMode.js";
+const rawBaseUrl = String(
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+    (process.env.NODE_ENV === "development" ? "http://localhost:8000" : ""),
+)
   .trim()
   .replace(/\/+$/, "")
   .replace(/\/api$/, "");
@@ -17,7 +21,9 @@ const toJson = async (response) => {
     } catch {
       // Keep the generic message when the error payload is not JSON.
     }
-    throw new Error(detail);
+    const error = new Error(typeof detail === "string" ? detail : "The request could not be completed.");
+    error.status = response.status;
+    throw error;
   }
   return response.json();
 };
@@ -61,6 +67,11 @@ const requestJson = async (path, options = {}) =>
     }),
   );
 
+const requestEmailAuth = async (path, options) => {
+  if (isSocialOnlyAuth) throw new Error("Email/password and email-code authentication is disabled. Please use social sign-in.");
+  return requestJson(path, options);
+};
+
 export const normalizeAssetUrl = (url) => {
   if (!url) return "";
 
@@ -103,7 +114,7 @@ export const normalizeAssetUrl = (url) => {
 };
 
 export const loginClient = async (email, password) =>
-  requestJson("/clients/login", {
+  requestEmailAuth("/clients/login", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -112,7 +123,7 @@ export const loginClient = async (email, password) =>
   });
 
 export const loginVendor = async (email, password) =>
-  requestJson("/business/login", {
+  requestEmailAuth("/business/login", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -121,7 +132,7 @@ export const loginVendor = async (email, password) =>
   });
 
 export const validateClientEmail = async (email, code) =>
-  requestJson("/clients/validate_email", {
+  requestEmailAuth("/clients/validate_email", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -130,7 +141,7 @@ export const validateClientEmail = async (email, code) =>
   });
 
 export const validateBusinessEmail = async (email, code) =>
-  requestJson("/business/validate_email", {
+  requestEmailAuth("/business/validate_email", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -139,7 +150,7 @@ export const validateBusinessEmail = async (email, code) =>
   });
 
 export const resendClientEmailCode = async (email) =>
-  requestJson("/clients/resend_email_code", {
+  requestEmailAuth("/clients/resend_email_code", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -148,7 +159,7 @@ export const resendClientEmailCode = async (email) =>
   });
 
 export const resendBusinessEmailCode = async (email) =>
-  requestJson("/business/resend_email_code", {
+  requestEmailAuth("/business/resend_email_code", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -186,6 +197,21 @@ export const fetchServicesByZipcode = async (zipcode) => {
   if (!zipcode) return [];
 
   return requestJson(`/business/services_by_zipcode/${encodeURIComponent(zipcode)}`);
+};
+
+// Match mobile discovery: pages contain matching services with business context.
+export const fetchVendorSearch = async (zipcode, { page = 1, pageSize = 20, category, search } = {}) => {
+  const params = new URLSearchParams({ zip_code: zipcode, page: String(page), page_size: String(pageSize), sort: "distance" });
+  if (category && category !== "all") params.set("category_id", category);
+  if (search) params.set("search", search);
+  const data = await requestJson(`/api/v1/vendors/search?${params}`);
+  const items = (data.results || []).flatMap(vendor => (vendor.services || []).map(service => ({
+    ...vendor,
+    service: { ...service, main_image_url: normalizeAssetUrl(service.main_image_url) },
+    business: { business_id: vendor.business_id, business_name: vendor.business_name, city: vendor.city, state: vendor.state },
+    distance_miles: service.distance_miles ?? vendor.distance_miles,
+  })));
+  return { items, page: data.page ?? page, hasMore: Boolean(data.has_more), total: data.total ?? items.length };
 };
 
 export const fetchPublicServiceProfile = async (serviceId) => {
@@ -271,3 +297,43 @@ export const createPlannerEventForClient = async (payload) =>
     },
     body: JSON.stringify(payload),
   });
+
+
+// Existing reviews endpoint used by eezevent-mobileapp/src/api/reviews.js.
+export const fetchVendorReviews = async (serviceId, { limit = 5, offset = 0 } = {}) => {
+  const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  const data = await requestJson(`/reviews/services/${encodeURIComponent(serviceId)}?${params}`);
+  return {
+    reviews: (data?.reviews || []).map(review => ({
+      id: review.review_id,
+      rating: review.rating,
+      comment: review.comment,
+      authorName: review.author_name,
+      createdAt: review.created_at,
+      vendorResponse: review.vendor_response,
+      vendorResponseUpdatedAt: review.vendor_response_updated_at,
+    })),
+    reviewCount: data?.review_count || 0,
+    averageRating: data?.average_rating ?? null,
+  };
+};
+
+export const fetchLegalDocument = key => requestJson(`/legal/documents/${encodeURIComponent(key)}`);
+
+export const registerAccount = (accountType, payload) => requestEmailAuth(
+  accountType === "vendor" ? "/business/register_business_owner" : "/clients/save_client",
+  { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) },
+);
+
+export const registerWithGoogle = payload => requestJson("/auth/google/register", {
+  method: "POST", headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ ...payload, provider: "google", client_platform: "web" }),
+});
+
+export const sendVendorInquiry = async ({ serviceId, eventId, message }) => {
+  if (!/^\d+$/.test(String(serviceId)) || !/^\d+$/.test(String(eventId))) throw new Error("Select a vendor and event before sending an inquiry.");
+  return requestJson("/inquiries/v2/inquiries", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ vendor_id: Number(serviceId), event_id: Number(eventId), message: String(message || "").trim() }),
+  });
+};

@@ -1,3 +1,4 @@
+import { themeTokens } from "./theme-tokens.js";
 import { alpha, createTheme } from "@mui/material/styles";
 
 const colors = {
@@ -17,9 +18,11 @@ const colors = {
   black: "#000000",
 };
 
-export const eezEventTheme = createTheme({
+export const createEezEventTheme = (mode = "light") => {
+const light = mode === "light";
+return createTheme({
   palette: {
-    mode: "dark",
+    mode,
     primary: {
       main: colors.navyAccent,
       dark: colors.navyPrimary,
@@ -27,21 +30,21 @@ export const eezEventTheme = createTheme({
       contrastText: colors.white,
     },
     secondary: {
-      main: colors.white,
-      contrastText: colors.navyDeep,
+      main: light ? "#334db5" : colors.white,
+      contrastText: light ? colors.white : colors.navyDeep,
     },
     background: {
-      default: colors.navyDeep,
-      paper: colors.navySurface,
+      default: light ? "#f6f8fc" : colors.navyDeep,
+      paper: light ? "#ffffff" : colors.navySurface,
     },
     text: {
-      primary: colors.lavenderText,
-      secondary: colors.lavenderSoft,
+      primary: light ? "#18243b" : colors.lavenderText,
+      secondary: light ? "#526078" : colors.lavenderSoft,
     },
-    success: { main: colors.success },
-    warning: { main: colors.warning },
-    error: { main: colors.error },
-    divider: colors.border,
+    success: { main: light ? "#168353" : colors.success },
+    warning: { main: light ? "#946200" : colors.warning },
+    error: { main: light ? "#c42b4b" : colors.error },
+    divider: light ? "#dbe2ee" : colors.border,
   },
   shape: {
     borderRadius: 10,
@@ -77,9 +80,10 @@ export const eezEventTheme = createTheme({
   components: {
     MuiCssBaseline: {
       styleOverrides: {
+        ":root": { ...themeTokens[mode], colorScheme: mode },
         body: {
-          backgroundColor: colors.navyDeep,
-          backgroundImage: `
+          backgroundColor: light ? "#f6f8fc" : colors.navyDeep,
+          backgroundImage: light ? "none" : `
             radial-gradient(circle at top left, rgba(46,53,232,0.22), transparent 30%),
             radial-gradient(circle at 80% 10%, rgba(38,47,194,0.18), transparent 26%),
             linear-gradient(180deg, #1A2397 0%, #111861 14%, ${colors.navyDeep} 36%, #090D32 100%)
@@ -106,8 +110,8 @@ export const eezEventTheme = createTheme({
           backgroundImage: "linear-gradient(180deg, #3740F4 0%, #2E35E8 100%)",
         },
         outlinedSecondary: {
-          borderColor: "rgba(230,231,255,0.5)",
-          color: colors.lavenderText,
+          borderColor: light ? "#aebbd7" : "rgba(230,231,255,0.5)",
+          color: light ? "#334db5" : colors.lavenderText,
         },
       },
     },
@@ -120,10 +124,20 @@ export const eezEventTheme = createTheme({
     },
     MuiChip: {
       styleOverrides: {
-        root: {
-          borderRadius: 12,
-          border: `1px solid ${colors.border}`,
-          backgroundColor: alpha(colors.white, 0.09),
+        root: ({ ownerState, theme }) => {
+          const color = theme.palette[ownerState.color];
+          const filledColor = ownerState.color !== "default" &&
+            ownerState.variant !== "outlined" && color?.main;
+          return {
+            borderRadius: 12,
+            border: `1px solid ${filledColor || (light ? "#dbe2ee" : colors.border)}`,
+            backgroundColor: filledColor || (light ? "#eef2fa" : alpha(colors.white, 0.09)),
+            ...(filledColor && {
+              color: color.contrastText,
+              "& .MuiChip-icon, & .MuiChip-deleteIcon": { color: "inherit" },
+              "&.MuiChip-clickable:hover": { backgroundColor: color.dark },
+            }),
+          };
         },
         label: {
           fontWeight: 700,
@@ -132,3 +146,6 @@ export const eezEventTheme = createTheme({
     },
   },
 });
+};
+
+export const eezEventTheme = createEezEventTheme("dark");

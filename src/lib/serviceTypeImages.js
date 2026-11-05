@@ -19,24 +19,24 @@ import venueRentalsImage from "../../assets/service-types/VENUE_RENTALS.jpg";
 import defaultServiceImage from "../../assets/service-types/default_service.jpg";
 
 const serviceTypeImages = {
-  AUDIO_VISUAL_SERVICES: audioVisualImage,
-  BARTENDING_SERVICES: bartendingImage,
-  CAKE_DESIGNERS: cakeDesignersImage,
-  CATERING: cateringImage,
-  CLEANERS: cleanersImage,
-  DECORATORS: decoratorsImage,
-  DJ_SERVICES: djServicesImage,
-  EVENT_PLANNERS: eventPlannersImage,
-  FLORISTS: floristsImage,
-  FURNITURE_RENTALS: furnitureRentalsImage,
-  HAIR_STYLISTS: hairStylistsImage,
-  LIGHTING: lightingImage,
-  MAKEUP_ARTISTS: makeupArtistsImage,
-  PHOTOGRAPHY: photographyImage,
-  SECURITY: securityImage,
-  TRANSPORTATION: transportationImage,
-  VALET_SERVICES: valetServicesImage,
-  VENUE_RENTALS: venueRentalsImage,
+  AUDIO_VISUAL_SERVICES: audioVisualImage.src,
+  BARTENDING_SERVICES: bartendingImage.src,
+  CAKE_DESIGNERS: cakeDesignersImage.src,
+  CATERING: cateringImage.src,
+  CLEANERS: cleanersImage.src,
+  DECORATORS: decoratorsImage.src,
+  DJ_SERVICES: djServicesImage.src,
+  EVENT_PLANNERS: eventPlannersImage.src,
+  FLORISTS: floristsImage.src,
+  FURNITURE_RENTALS: furnitureRentalsImage.src,
+  HAIR_STYLISTS: hairStylistsImage.src,
+  LIGHTING: lightingImage.src,
+  MAKEUP_ARTISTS: makeupArtistsImage.src,
+  PHOTOGRAPHY: photographyImage.src,
+  SECURITY: securityImage.src,
+  TRANSPORTATION: transportationImage.src,
+  VALET_SERVICES: valetServicesImage.src,
+  VENUE_RENTALS: venueRentalsImage.src,
 };
 
 export const normalizeServiceTypeKey = (value) =>
@@ -46,4 +46,4 @@ export const normalizeServiceTypeKey = (value) =>
     .replace(/\s+/g, "_");
 
 export const getServiceTypeImage = (value) =>
-  serviceTypeImages[normalizeServiceTypeKey(value)] || defaultServiceImage;
+  serviceTypeImages[normalizeServiceTypeKey(value)] || defaultServiceImage.src;
