@@ -1,4 +1,5 @@
 "use client";
+import EventInvitation from "../components/EventInvitation";
 import { alpha } from "@mui/material/styles";
 import CalendarTodayRoundedIcon from "@mui/icons-material/CalendarTodayRounded";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
@@ -97,7 +98,10 @@ const EventCard = memo(function EventCard({ event }) {
         </Stack>
       </Box>
       <Stack direction="row" gap={1.5} alignItems="center" justifyContent="space-between" flexWrap="wrap">
-        <Chip size="small" label={event.status || "In Progress"} icon={<Box component="span" sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "currentColor" }} />} sx={{ height: 26, border: "none", borderRadius: 1.25, fontSize: 12, bgcolor: theme => alpha(theme.palette[statusTone].main, .08), color: theme => theme.palette.mode === "light" ? theme.palette[statusTone].dark : theme.palette[statusTone].light, "& .MuiChip-icon": { ml: 1.25, color: "inherit" }, "& .MuiChip-label": { px: 1 } }} />
+        <Stack direction="row" gap={1} alignItems="center" flexWrap="wrap">
+          <Chip size="small" label={event.status || "In Progress"} icon={<Box component="span" sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "currentColor" }} />} sx={{ height: 26, border: "none", borderRadius: 1.25, fontSize: 12, bgcolor: theme => alpha(theme.palette[statusTone].main, .08), color: theme => theme.palette.mode === "light" ? theme.palette[statusTone].dark : theme.palette[statusTone].light, "& .MuiChip-icon": { ml: 1.25, color: "inherit" }, "& .MuiChip-label": { px: 1 } }} />
+          <EventInvitation eventId={event.event_id} />
+        </Stack>
         {createdLabel && <Typography variant="caption" color="text.secondary">Created {createdLabel}</Typography>}
       </Stack>
     </Stack>

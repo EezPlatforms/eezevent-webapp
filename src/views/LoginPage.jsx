@@ -4,7 +4,7 @@ import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import EmailRoundedIcon from "@mui/icons-material/EmailRounded";
 import PersonOutlineRoundedIcon from "@mui/icons-material/PersonOutlineRounded";
 import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
-import logo from "../../assets/eezevent-just-logo.png";
+import { BrandLogo } from "../components/BrandIdentity";
 import { alpha } from "@mui/material/styles";
 import LockRoundedIcon from "@mui/icons-material/LockRounded";
 import VisibilityOffRoundedIcon from "@mui/icons-material/VisibilityOffRounded";
@@ -224,7 +224,7 @@ export default function LoginPage({ initialLoginType = "client", initialNextPath
       >
         <Stack spacing={2.5}>
           <Stack spacing={1.5} alignItems="center" sx={{ textAlign: "center", mb: .5 }}>
-            <Box component="img" src={logo.src} alt="EezEvent" sx={{ width: 48, height: 48, borderRadius: 1.5, mb: .5 }} />
+            <BrandLogo />
             <Typography component="h1" sx={{ fontSize: { xs: 29, sm: 32 }, fontWeight: 700, lineHeight: 1.2, letterSpacing: "-.025em" }}>Welcome back</Typography>
             <Typography color="text.secondary" sx={{ fontSize: 16 }}>Choose your account to continue.</Typography>
           </Stack>
