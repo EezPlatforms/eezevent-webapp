@@ -27,6 +27,8 @@ jobs:
       ECS_CLUSTER: eezevent-dev-cluster
       ECS_SERVICE: eezevent-dev-webapp-service
       GOOGLE_WEB_CLIENT_ID: ${{ vars.NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID }}
+      APPLE_WEB_CLIENT_ID: ${{ vars.NEXT_PUBLIC_APPLE_WEB_CLIENT_ID }}
+      APPLE_REDIRECT_URI: ${{ vars.NEXT_PUBLIC_APPLE_REDIRECT_URI }}
       AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
     steps:
       - name: Checkout
@@ -90,6 +92,8 @@ jobs:
           build-args: |
             NEXT_PUBLIC_API_BASE_URL=https://dev-api.eezevent.com
             NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID=${{ env.GOOGLE_WEB_CLIENT_ID }}
+            NEXT_PUBLIC_APPLE_WEB_CLIENT_ID=${{ env.APPLE_WEB_CLIENT_ID }}
+            NEXT_PUBLIC_APPLE_REDIRECT_URI=${{ env.APPLE_REDIRECT_URI }}
             NEXT_PUBLIC_AUTH_MODE=social_only
           cache-from: type=gha
           cache-to: type=gha,mode=max

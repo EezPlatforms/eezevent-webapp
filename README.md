@@ -100,3 +100,31 @@ No AWS access-key secrets are required. The workflow uses
 Complete the GoDaddy DNS, backend CORS, and Google OAuth origin setup described
 in the infra deployment guide before browser testing. Subsequent GitHub deployments
 own the service's task-definition revision; Terraform retains infrastructure ownership.
+
+### Apple sign-in on the web
+
+Login and registration support Apple for Host and Business accounts. Enable the
+buttons with these build-time variables (also accepted as Docker build arguments
+and GitHub `development` environment variables):
+
+```dotenv
+NEXT_PUBLIC_APPLE_WEB_CLIENT_ID=your.apple.services.id
+NEXT_PUBLIC_APPLE_REDIRECT_URI=https://webapp-dev.eezevent.com/login
+```
+
+In Apple Developer, enable Sign in with Apple for a Services ID linked to your
+primary App ID. Register the webapp domain and the exact HTTPS return URL above.
+Use a separate registered return URL for each environment; Apple does not accept
+localhost return URLs. The popup SDK returns credentials to the originating page,
+so this integration does not require a server callback or client secret in the browser.
+Set `APPLE_WEB_CLIENT_ID` on the API to the same Services ID and restart the API.
+Rebuild the webapp after changing public variables. Both public variables must be
+set for the Apple buttons to appear; Google continues to work independently.
+
+Registration sends Apple's first-authorization name/email data along with the
+identity token, account type, and accepted agreement versions. Subsequent Apple
+authorizations may omit the name; the API uses the existing identity/token data.
+Popup cancellation leaves the user on the same page. Real sign-in verification
+requires the registered domain, Apple configuration, and an Apple account.
+
+Reference: [Apple web sign-in configuration](https://developer.apple.com/documentation/signinwithapple/configuring-your-webpage-for-sign-in-with-apple).
