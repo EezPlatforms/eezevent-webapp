@@ -1,0 +1,181 @@
+name: Deploy Staging Webapp to AWS ECS
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing webapp Git tag to deploy to staging
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-staging-webapp
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    environment: staging
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AWS_REGION: us-east-2
+      ECR_REPOSITORY: eezevent-webapp-staging
+      ECS_CLUSTER: eezevent-staging-cluster
+      ECS_SERVICE: eezevent-staging-webapp-service
+      GOOGLE_WEB_CLIENT_ID: ${{ vars.NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID }}
+      APPLE_WEB_CLIENT_ID: ${{ vars.NEXT_PUBLIC_APPLE_WEB_CLIENT_ID }}
+      APPLE_REDIRECT_URI: ${{ vars.NEXT_PUBLIC_APPLE_REDIRECT_URI }}
+      AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+    steps:
+      - name: Validate release tag
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$ ]]
+
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: refs/tags/${{ inputs.release_tag }}
+
+      - name: Record release source
+        id: source
+        shell: bash
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Validate configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${AWS_ROLE_ARN:?Set staging environment variable AWS_ROLE_ARN}"
+          : "${GOOGLE_WEB_CLIENT_ID:?Set staging environment variable NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID}"
+          [[ "$AWS_ROLE_ARN" == arn:aws:iam::250830191532:role/* ]]
+          [[ "$GOOGLE_WEB_CLIENT_ID" == *.apps.googleusercontent.com ]]
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Test
+        run: |
+          npm ci --no-audit --no-fund
+          node --test tests/*.test.*
+
+      - name: Configure AWS credentials through OIDC
+        uses: aws-actions/configure-aws-credentials@v6.1.0
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          allowed-account-ids: '250830191532'
+
+      - name: Read the latest staging task configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          aws ecs describe-services --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" > "$RUNNER_TEMP/service.json"
+          jq -e '.failures | length == 0' "$RUNNER_TEMP/service.json"
+          jq -e '.services | length == 1' "$RUNNER_TEMP/service.json"
+          jq -e '.services[0].status == "ACTIVE" and .services[0].desiredCount > 0' "$RUNNER_TEMP/service.json"
+          TASK_ARN=$(jq -r '.services[0].taskDefinition' "$RUNNER_TEMP/service.json")
+          FAMILY_WITH_REVISION="${TASK_ARN##*/}"
+          FAMILY="${FAMILY_WITH_REVISION%:*}"
+          test "$FAMILY" = "eezevent-staging-webapp"
+          aws ecs describe-task-definition --task-definition "$FAMILY" \
+            --query taskDefinition > "$RUNNER_TEMP/task-definition.json"
+          jq -e '.family == "eezevent-staging-webapp" and ([.containerDefinitions[] | select(.name == "webapp")] | length == 1)' "$RUNNER_TEMP/task-definition.json"
+          API_BASE_URL=$(jq -r '.containerDefinitions[] | select(.name == "webapp") | .environment[] | select(.name == "API_BASE_URL") | .value' "$RUNNER_TEMP/task-definition.json")
+          test "$API_BASE_URL" = "https://staging-api.eezevent.com"
+          echo "API_BASE_URL=$API_BASE_URL" >> "$GITHUB_ENV"
+
+      - name: Log in to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push image
+        id: image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:staging-${{ steps.source.outputs.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          build-args: |
+            NEXT_PUBLIC_API_BASE_URL=${{ env.API_BASE_URL }}
+            NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID=${{ env.GOOGLE_WEB_CLIENT_ID }}
+            NEXT_PUBLIC_APPLE_WEB_CLIENT_ID=${{ env.APPLE_WEB_CLIENT_ID }}
+            NEXT_PUBLIC_APPLE_REDIRECT_URI=${{ env.APPLE_REDIRECT_URI }}
+            NEXT_PUBLIC_AUTH_MODE=${{ vars.NEXT_PUBLIC_AUTH_MODE || 'social_only' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+
+      - name: Render the new task definition
+        id: task
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ runner.temp }}/task-definition.json
+          container-name: webapp
+          image: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}@${{ steps.image.outputs.digest }}
+
+      - name: Deploy to ECS and wait for stability
+        id: deploy
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.task.outputs.task-definition }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          service: ${{ env.ECS_SERVICE }}
+          wait-for-service-stability: true
+
+      - name: Verify ECS did not roll back the release
+        env:
+          EXPECTED_TASK: ${{ steps.deploy.outputs.task-definition-arn }}
+          IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          aws ecs describe-services --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" > "$RUNNER_TEMP/deployed-service.json"
+          jq -e --arg expected "$EXPECTED_TASK" '
+            (.failures | length == 0) and
+            (.services | length == 1) and
+            (.services[0] | .taskDefinition == $expected and
+              .runningCount == .desiredCount and .pendingCount == 0 and
+              any(.deployments[]; .status == "PRIMARY" and
+                .taskDefinition == $expected and .rolloutState == "COMPLETED"))
+          ' "$RUNNER_TEMP/deployed-service.json"
+          {
+            echo '### Staging webapp deployed'
+            echo '- URL: https://webapp-staging.eezevent.com'
+            printf -- '- Image digest: `%s`\n' "$IMAGE_DIGEST"
+            printf -- '- Task definition: `%s`\n' "$EXPECTED_TASK"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Check staging website and API CORS
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 30 https://webapp-staging.eezevent.com/healthz
+          curl --fail --silent --show-error --max-time 30 -X OPTIONS "$API_BASE_URL/events/types" \
+            -H 'Origin: https://webapp-staging.eezevent.com' \
+            -H 'Access-Control-Request-Method: GET' \
+            -H 'Access-Control-Request-Headers: authorization' \
+            -D "$RUNNER_TEMP/cors-headers.txt" -o /dev/null
+          python - <<'PYTHON'
+          import os
+          from pathlib import Path
+          headers = (Path(os.environ['RUNNER_TEMP']) / 'cors-headers.txt').read_text().lower()
+          assert 'access-control-allow-origin: https://webapp-staging.eezevent.com' in headers
+          assert 'access-control-allow-credentials: true' in headers
+          PYTHON
