@@ -357,3 +357,11 @@ export const getPublicInvitation = (token) => requestJson(`/invitations/${encode
 export const submitInvitationRSVP = (token, payload) => requestJson(`/invitations/${encodeURIComponent(token)}/rsvp`, {
   method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
 });
+
+export const updateInvitation = (eventId, hostMessage) => requestJson(`/invitations/events/${eventId}`, {
+  method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({host_message: hostMessage}),
+});
+
+export const updateGuestResponse = (eventId, responseId, payload) => requestJson(`/invitations/events/${eventId}/responses/${responseId}`, {
+  method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload),
+});
