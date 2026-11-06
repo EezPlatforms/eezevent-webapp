@@ -337,3 +337,31 @@ export const sendVendorInquiry = async ({ serviceId, eventId, message }) => {
     body: JSON.stringify({ vendor_id: Number(serviceId), event_id: Number(eventId), message: String(message || "").trim() }),
   });
 };
+
+export const loginWithApple = ({ idToken, userType }) => requestJson("/auth/apple/login", {
+  method: "POST", headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ id_token: idToken, provider: "apple", user_type: userType, client_platform: "web" }),
+});
+
+export const registerWithApple = payload => requestJson("/auth/apple/register", {
+  method: "POST", headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ ...payload, provider: "apple", client_platform: "web" }),
+});
+
+export const getHostInvitation = (eventId) => requestJson(`/invitations/events/${eventId}`);
+export const uploadInvitationImage = (eventId, file) => {
+  const body = new FormData(); body.append('file', file);
+  return requestJson(`/invitations/events/${eventId}/image`, { method: 'POST', body });
+};
+export const getPublicInvitation = (token) => requestJson(`/invitations/${encodeURIComponent(token)}`);
+export const submitInvitationRSVP = (token, payload) => requestJson(`/invitations/${encodeURIComponent(token)}/rsvp`, {
+  method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+});
+
+export const updateInvitation = (eventId, hostMessage) => requestJson(`/invitations/events/${eventId}`, {
+  method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({host_message: hostMessage}),
+});
+
+export const updateGuestResponse = (eventId, responseId, payload) => requestJson(`/invitations/events/${eventId}/responses/${responseId}`, {
+  method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload),
+});

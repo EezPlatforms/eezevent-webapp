@@ -1,9 +1,10 @@
 "use client";
+import AppleSignInButton from "../components/AppleSignInButton";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import EmailRoundedIcon from "@mui/icons-material/EmailRounded";
 import PersonOutlineRoundedIcon from "@mui/icons-material/PersonOutlineRounded";
 import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
-import logo from "../../assets/eezevent-just-logo.png";
+import { BrandLogo } from "../components/BrandIdentity";
 import { alpha } from "@mui/material/styles";
 import LockRoundedIcon from "@mui/icons-material/LockRounded";
 import VisibilityOffRoundedIcon from "@mui/icons-material/VisibilityOffRounded";
@@ -31,12 +32,13 @@ import { useAuth } from "../lib/auth";
 export default function LoginPage({ initialLoginType = "client", initialNextPath = "/" }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, login, loginWithGoogle, resendValidationCode, validateEmail } = useAuth();
+  const { isAuthenticated, login, loginWithGoogle, loginWithApple, resendValidationCode, validateEmail } = useAuth();
   const [loginType, setLoginType] = useState(initialLoginType);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
   const [requireValidation, setRequireValidation] = useState(false);
@@ -222,7 +224,7 @@ export default function LoginPage({ initialLoginType = "client", initialNextPath
       >
         <Stack spacing={2.5}>
           <Stack spacing={1.5} alignItems="center" sx={{ textAlign: "center", mb: .5 }}>
-            <Box component="img" src={logo.src} alt="EezEvent" sx={{ width: 48, height: 48, borderRadius: 1.5, mb: .5 }} />
+            <BrandLogo />
             <Typography component="h1" sx={{ fontSize: { xs: 29, sm: 32 }, fontWeight: 700, lineHeight: 1.2, letterSpacing: "-.025em" }}>Welcome back</Typography>
             <Typography color="text.secondary" sx={{ fontSize: 16 }}>Choose your account to continue.</Typography>
           </Stack>
@@ -239,7 +241,7 @@ export default function LoginPage({ initialLoginType = "client", initialNextPath
             }}
             fullWidth
             aria-label="Sign-in account type"
-            disabled={loading || googleLoading}
+            disabled={loading || googleLoading || appleLoading}
             sx={{
               gap: 1.5,
               "& .MuiToggleButtonGroup-grouped": { border: "1px solid", borderColor: "divider", borderRadius: "12px !important", m: "0 !important" },
@@ -266,7 +268,7 @@ export default function LoginPage({ initialLoginType = "client", initialNextPath
             <Stack spacing={1.5} alignItems="center" sx={{ py: 1 }}>
               <Box
                 ref={googleButtonRef}
-                sx={{ width: "100%", minHeight: 44, display: "flex", justifyContent: "center", opacity: googleLoading ? .6 : 1, pointerEvents: googleLoading ? "none" : "auto" }}
+                sx={{ width: "100%", minHeight: 44, display: "flex", justifyContent: "center", opacity: googleLoading || appleLoading ? .6 : 1, pointerEvents: googleLoading || appleLoading ? "none" : "auto" }}
               />
               <Typography variant="caption" color="text.secondary" role="status" aria-live="polite" sx={{ textAlign: "center" }}>
                 {googleLoading ? "Signing you in…" : "Continue securely with your Google account."}
@@ -275,6 +277,11 @@ export default function LoginPage({ initialLoginType = "client", initialNextPath
           ) : (
             <Alert severity="info">Google sign-in is currently unavailable. Please try again later.</Alert>
           )}
+          <AppleSignInButton disabled={loading || googleLoading || appleLoading} onBusyChange={setAppleLoading} onError={setError} onCredential={async response => {
+            setError(""); setValidationMessage(""); setRequireValidation(false);
+            await loginWithApple({ loginType, idToken: response.authorization.id_token });
+            navigate(nextPath, { replace: true });
+          }} />
           {!isSocialOnlyAuth && googleClientId && <Divider sx={{ color: "text.secondary", fontSize: 13 }}>or use email</Divider>}
 
           {!isSocialOnlyAuth ? (

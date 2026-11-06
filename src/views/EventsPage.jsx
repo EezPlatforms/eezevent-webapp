@@ -1,4 +1,5 @@
 "use client";
+import EventInvitation from "../components/EventInvitation";
 import { alpha } from "@mui/material/styles";
 import CalendarTodayRoundedIcon from "@mui/icons-material/CalendarTodayRounded";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
@@ -21,7 +22,7 @@ import {
 import { memo, useDeferredValue, useEffect, useMemo, useState, useTransition } from "react";
 import { Navigate, useNavigate } from "../lib/navigation";
 import { useAuth } from "../lib/auth";
-import { fetchClientEvents } from "../lib/api";
+import { fetchClientEvents, normalizeAssetUrl } from "../lib/api";
 import { getEventTypeIcon } from "../lib/eventTypeIcons";
 
 const INACTIVE_STATUSES = new Set(["cancelled", "completed", "archived"]);
@@ -61,8 +62,19 @@ function formatBudget(value) {
   }).format(amount);
 }
 
-const EventCard = memo(function EventCard({ event }) {
+function EventThumbnail({ event }) {
   const EventTypeIcon = getEventTypeIcon(event.event_type);
+  const src = normalizeAssetUrl(event.profile_image_url);
+  const [failedUrl,setFailedUrl] = useState(null);
+  const showImage = Boolean(src && src !== failedUrl);
+  return <Box sx={{width:64,height:64,display:'grid',placeItems:'center',flexShrink:0,borderRadius:2,overflow:'hidden',
+    bgcolor:theme=>alpha(theme.palette.primary.main,.07),color:theme=>theme.palette.mode==='light'?theme.palette.primary.main:theme.palette.primary.light}}>
+    {showImage ? <Box component="img" src={src} alt={`${event.name} event`} loading="lazy" onError={()=>setFailedUrl(src)}
+      sx={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/> : <EventTypeIcon sx={{fontSize:28}}/>}
+  </Box>;
+}
+
+const EventCard = memo(function EventCard({ event }) {
   const normalizedStatus = String(event.status || "In Progress").trim().toLowerCase();
   const statusTone = normalizedStatus === "cancelled" ? "error" : normalizedStatus === "completed" ? "success" : "primary";
   const created = event.created_at ? new Date(event.created_at) : null;
@@ -71,7 +83,7 @@ const EventCard = memo(function EventCard({ event }) {
   return <Paper component="article" sx={{ height: "100%", p: { xs: 2.5, sm: 3 }, border: "1px solid", borderColor: "divider", borderRadius: 3, bgcolor: "background.paper", boxShadow: "0 4px 20px rgba(7,11,42,.05)" }}>
     <Stack spacing={2.5}>
       <Stack direction="row" gap={2} alignItems="flex-start">
-        <Box sx={{ width: 44, height: 44, display: "grid", placeItems: "center", flexShrink: 0, borderRadius: 2, bgcolor: theme => alpha(theme.palette.primary.main, .07), color: theme => theme.palette.mode === "light" ? theme.palette.primary.main : theme.palette.primary.light }}><EventTypeIcon sx={{ fontSize: 24 }} /></Box>
+        <EventThumbnail event={event} />
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, letterSpacing: ".06em", textTransform: "uppercase" }}>{event.event_type || "Event"}</Typography>
           <Typography component="h2" sx={{ fontSize: { xs: 21, sm: 24 }, fontWeight: 700, letterSpacing: "-.02em", lineHeight: 1.3, mt: .5, overflowWrap: "anywhere" }}>{event.name}</Typography>
@@ -97,7 +109,10 @@ const EventCard = memo(function EventCard({ event }) {
         </Stack>
       </Box>
       <Stack direction="row" gap={1.5} alignItems="center" justifyContent="space-between" flexWrap="wrap">
-        <Chip size="small" label={event.status || "In Progress"} icon={<Box component="span" sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "currentColor" }} />} sx={{ height: 26, border: "none", borderRadius: 1.25, fontSize: 12, bgcolor: theme => alpha(theme.palette[statusTone].main, .08), color: theme => theme.palette.mode === "light" ? theme.palette[statusTone].dark : theme.palette[statusTone].light, "& .MuiChip-icon": { ml: 1.25, color: "inherit" }, "& .MuiChip-label": { px: 1 } }} />
+        <Stack direction="row" gap={1} alignItems="center" flexWrap="wrap">
+          <Chip size="small" label={event.status || "In Progress"} icon={<Box component="span" sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "currentColor" }} />} sx={{ height: 26, border: "none", borderRadius: 1.25, fontSize: 12, bgcolor: theme => alpha(theme.palette[statusTone].main, .08), color: theme => theme.palette.mode === "light" ? theme.palette[statusTone].dark : theme.palette[statusTone].light, "& .MuiChip-icon": { ml: 1.25, color: "inherit" }, "& .MuiChip-label": { px: 1 } }} />
+          <EventInvitation eventId={event.event_id} />
+        </Stack>
         {createdLabel && <Typography variant="caption" color="text.secondary">Created {createdLabel}</Typography>}
       </Stack>
     </Stack>

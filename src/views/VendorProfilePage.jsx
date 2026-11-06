@@ -10,7 +10,6 @@ import { useEffect, useState } from "react";
 
 import { Alert, Box, Button, ButtonBase, Chip, CircularProgress, Divider, Paper, Rating, Stack, Typography } from "@mui/material";
 import ShareRoundedIcon from "@mui/icons-material/ShareRounded";
-import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import PhotoLibraryOutlinedIcon from "@mui/icons-material/PhotoLibraryOutlined";
@@ -19,7 +18,8 @@ import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import { fetchPublicServiceProfile, fetchServiceImages, fetchServiceCatalogItems, fetchVendorReviews } from "../lib/api";
 
 export default function VendorProfilePage({serviceId,initialProfile,returnTo = null, initialInquiry = false, initialInquiryEvent = ""}) {
-  const { isAuthenticated, authReady } = useAuth();
+  const { auth, isAuthenticated, authReady } = useAuth();
+  const canInquire = authReady && (!isAuthenticated || auth?.userType === "client");
   const [inquiryOpen, setInquiryOpen] = useState(initialInquiry);
   const inquiryParams = new URLSearchParams({ inquiry: "1" });
   if (returnTo) inquiryParams.set("returnTo", returnTo);
@@ -148,7 +148,6 @@ export default function VendorProfilePage({serviceId,initialProfile,returnTo = n
       <Stack direction="row" gap={1.25} flexWrap="wrap">
         <Button variant="contained" startIcon={<ShareRoundedIcon />} onClick={share}>Share this vendor</Button>
         <Button variant="outlined" color="secondary" startIcon={<WhatsAppIcon />} component="a" href={`https://wa.me/?text=${encodeURIComponent(`Check out ${service.name} on EezEvent: ${shareUrl}`)}`} target="_blank" rel="noopener noreferrer">Share on WhatsApp</Button>
-        <Button color="secondary" startIcon={<ContentCopyRoundedIcon />} onClick={copyLink}>{copied ? "Link copied" : "Copy profile link"}</Button>
       </Stack>
       <Typography variant="caption" color="text.secondary" role="status" aria-live="polite">{copied ? "Profile link copied. Ready to share." : "Share with your event team, friends, or family."}</Typography>
     </Stack>
@@ -217,15 +216,14 @@ export default function VendorProfilePage({serviceId,initialProfile,returnTo = n
       <Stack spacing={1.25}>
         <Button variant="contained" startIcon={<ShareRoundedIcon />} onClick={share}>Share this vendor</Button>
         <Button variant="outlined" color="secondary" startIcon={<WhatsAppIcon />} component="a" href={`https://wa.me/?text=${encodeURIComponent(`Check out ${service.name} on EezEvent: ${shareUrl}`)}`} target="_blank" rel="noopener noreferrer">Share on WhatsApp</Button>
-        <Button sx={{ color: "text.secondary" }} startIcon={<ContentCopyRoundedIcon />} onClick={copyLink}>{copied ? "Link copied" : "Copy profile link"}</Button>
       </Stack>
       <Divider sx={{ my: 2.5, borderColor: "divider" }} />
-      <Stack spacing={1.25}>
+      {canInquire && <Stack spacing={1.25}>
         {isAuthenticated ? <Button variant="contained" startIcon={<SendRoundedIcon />} onClick={() => setInquiryOpen(true)} disabled={!authReady}>Send an inquiry</Button> : <>
           <Button component={RouterLink} to={`/login?account=client&next=${encodeURIComponent(inquiryPath)}`} variant="contained" disabled={!authReady}>Log in to inquire</Button>
           <Button component={RouterLink} to={`/register?next=${encodeURIComponent(inquiryPath)}`} variant="outlined" color="secondary" disabled={!authReady}>Create an account</Button>
         </>}
-      </Stack>
+      </Stack>}
     </Paper>
     </Box>
     <VendorMediaCarousel items={viewerItems} index={viewer?.index ?? -1} label={viewer?.kind === "catalog" ? "Service packages" : "Vendor portfolio"} onChange={index => setViewer(current => current ? { ...current, index } : null)} onClose={() => setViewer(null)} />
