@@ -1,6 +1,7 @@
 "use client";
+import GuestResponseEditor from "./GuestResponseEditor";
 import InvitationDetails from "./InvitationDetails";
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Button, Stack, Typography, Box, Dialog, DialogTitle, DialogContent, IconButton, Tabs, Tab, Chip, CircularProgress, TextField } from '@mui/material';
 import CheckCircleOutlineRoundedIcon from '@mui/icons-material/CheckCircleOutlineRounded';
 import HelpOutlineRoundedIcon from '@mui/icons-material/HelpOutlineRounded';
@@ -11,13 +12,15 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import MailOutlineRoundedIcon from '@mui/icons-material/MailOutlineRounded';
 import UploadRoundedIcon from '@mui/icons-material/UploadRounded';
 import ContentCopyRoundedIcon from '@mui/icons-material/ContentCopyRounded';
-import { getHostInvitation, uploadInvitationImage, normalizeAssetUrl } from '../lib/api';
+import { getHostInvitation, uploadInvitationImage, updateInvitation, normalizeAssetUrl } from '../lib/api';
 
 export default function EventInvitation({ eventId }) {
   const [open, setOpen] = useState(false), [tab, setTab] = useState(0);
+  const [hostMessage,setHostMessage] = useState(''), [saved,setSaved] = useState(false);
   const [data, setData] = useState(null), [error, setError] = useState(''), [busy, setBusy] = useState(false), [copied, setCopied] = useState(false);
   const run = async (action) => { setBusy(true); setError(''); try { await action(); setData(await getHostInvitation(eventId)); } catch(e) { setError(e.message); } finally { setBusy(false); } };
-  const show = () => { setOpen(true); setTab(0); setData(null); setCopied(false); run(async () => {}); };
+  useEffect(() => {setHostMessage(data?.invitation?.host_message || '');},[data?.invitation?.host_message,open]);
+  const show = () => { setOpen(true); setSaved(false); setTab(0); setData(null); setCopied(false); run(async () => {}); };
   const url = data?.invitation ? `${window.location.origin}/invite/${data.invitation.token}` : '';
   const message = `You're invited to ${data?.invitation?.name}! RSVP: ${url}`;
   return <>
@@ -53,6 +56,13 @@ export default function EventInvitation({ eventId }) {
               <Typography variant="body2" color="text.secondary" sx={{mt:.5,mb:2}}>JPG, PNG or WebP · Up to 5 MB</Typography>
               <Button component="label" variant="contained" startIcon={<UploadRoundedIcon/>} disabled={busy}>{data.invitation ? 'Replace image' : 'Upload image'}<input hidden type="file" accept="image/jpeg,image/png,image/webp" onChange={e => { const file=e.target.files?.[0]; if(file) run(() => uploadInvitationImage(eventId,file)); e.target.value=''; }}/></Button>
             </Box>
+            {data.invitation && <Stack spacing={1.5}>
+              <TextField label="Message from the host (optional)" multiline minRows={3} value={hostMessage} disabled={busy}
+                inputProps={{maxLength:2000}} helperText={`${hostMessage.length}/2000 · Shown to everyone with your invitation link.`}
+                onChange={event=>{setHostMessage(event.target.value);setSaved(false);}}/>
+              <Button variant="outlined" disabled={busy || hostMessage===(data.invitation.host_message || '')} onClick={()=>run(async()=>{await updateInvitation(eventId,hostMessage);setSaved(true);})}>Save message</Button>
+              {saved && <Alert severity="success">Invitation message saved.</Alert>}
+            </Stack>}
             {data.invitation && <InvitationDetails invitation={data.invitation} />}
             {data.invitation && <Stack spacing={1.5}>
               <Typography fontWeight={600}>Invite your guests</Typography>
@@ -67,7 +77,7 @@ export default function EventInvitation({ eventId }) {
           </>}
           {data && tab === 1 && <>
             {!data.responses.length && <Box sx={{textAlign:'center',py:5}}><Typography fontWeight={600}>Your guest list starts here</Typography><Typography color="text.secondary" variant="body2" sx={{mt:1}}>Share your invitation link. Responses will appear here as guests RSVP.</Typography></Box>}
-            {data.responses.map(g => <Box key={g.id} sx={{p:2,border:'1px solid',borderColor:'divider',borderRadius:2}}><Stack direction="row" justifyContent="space-between" gap={1}><Typography fontWeight={600}>{g.name}</Typography><Chip size="small" label={{yes:'Yes',no:'No',maybe:'Maybe'}[g.response]} sx={{bgcolor:g.response==='yes'?'#dcfce7':g.response==='maybe'?'#fef3c7':'#f3f4f6',color:g.response==='yes'?'#166534':g.response==='maybe'?'#92400e':'#4b5563',fontWeight:600}}/></Stack>{g.response!=='no' && <Typography variant="body2" sx={{mt:1}}>{g.adults} adults · {g.kids} kids</Typography>}<Typography variant="body2" color="text.secondary" sx={{overflowWrap:'anywhere'}}>{[g.email,g.phone_display || g.phone].filter(Boolean).join(' · ')}</Typography>{g.message && <Typography variant="body2" sx={{mt:1.5,p:1.5,bgcolor:"action.hover",borderRadius:1,whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{g.message}</Typography>}</Box>)}
+            {data.responses.map(g => <Box key={g.id} sx={{p:2,border:'1px solid',borderColor:'divider',borderRadius:2}}><Stack direction="row" justifyContent="space-between" gap={1}><Typography fontWeight={600}>{g.name}</Typography><Chip size="small" label={{yes:'Yes',no:'No',maybe:'Maybe'}[g.response]} sx={{bgcolor:g.response==='yes'?'#dcfce7':g.response==='maybe'?'#fef3c7':'#f3f4f6',color:g.response==='yes'?'#166534':g.response==='maybe'?'#92400e':'#4b5563',fontWeight:600}}/></Stack>{g.response!=='no' && <Typography variant="body2" sx={{mt:1}}>{g.adults} adults · {g.kids} kids</Typography>}<Typography variant="body2" color="text.secondary" sx={{overflowWrap:'anywhere'}}>{[g.email,g.phone_display || g.phone].filter(Boolean).join(' · ')}</Typography>{g.message && <Typography variant="body2" sx={{mt:1.5,p:1.5,bgcolor:"action.hover",borderRadius:1,whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{g.message}</Typography>}<GuestResponseEditor eventId={eventId} guest={g} onUpdated={async()=>setData(await getHostInvitation(eventId))}/></Box>)}
           </>}
         </Stack>
       </DialogContent>
