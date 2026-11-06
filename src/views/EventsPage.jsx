@@ -1,4 +1,5 @@
 "use client";
+import EventLocationEditor from "../components/EventLocationEditor";
 import EventInvitation from "../components/EventInvitation";
 import { alpha } from "@mui/material/styles";
 import CalendarTodayRoundedIcon from "@mui/icons-material/CalendarTodayRounded";
@@ -74,7 +75,7 @@ function EventThumbnail({ event }) {
   </Box>;
 }
 
-const EventCard = memo(function EventCard({ event }) {
+const EventCard = memo(function EventCard({ event, onLocationSaved }) {
   const normalizedStatus = String(event.status || "In Progress").trim().toLowerCase();
   const statusTone = normalizedStatus === "cancelled" ? "error" : normalizedStatus === "completed" ? "success" : "primary";
   const created = event.created_at ? new Date(event.created_at) : null;
@@ -108,6 +109,7 @@ const EventCard = memo(function EventCard({ event }) {
           <Box><Typography variant="caption" color="text.secondary">Guests</Typography><Typography variant="body2" sx={{ fontWeight: 600, mt: .25 }}>{event.number_of_guests || 0}</Typography></Box>
         </Stack>
       </Box>
+      <EventLocationEditor event={event} onSaved={onLocationSaved} />
       <Stack direction="row" gap={1.5} alignItems="center" justifyContent="space-between" flexWrap="wrap">
         <Stack direction="row" gap={1} alignItems="center" flexWrap="wrap">
           <Chip size="small" label={event.status || "In Progress"} icon={<Box component="span" sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "currentColor" }} />} sx={{ height: 26, border: "none", borderRadius: 1.25, fontSize: 12, bgcolor: theme => alpha(theme.palette[statusTone].main, .08), color: theme => theme.palette.mode === "light" ? theme.palette[statusTone].dark : theme.palette[statusTone].light, "& .MuiChip-icon": { ml: 1.25, color: "inherit" }, "& .MuiChip-label": { px: 1 } }} />
@@ -332,7 +334,7 @@ export default function EventsPage() {
         <Grid container spacing={3}>
           {ownedEvents.map((event) => (
             <Grid key={event.event_id || `${event.name}-${event.start_time}`} size={{ xs: 12, md: 6 }}>
-              <EventCard event={event} />
+              <EventCard event={event} onLocationSaved={updated=>setEvents(current=>current.map(item=>item.event_id===updated.event_id?updated:item))} />
             </Grid>
           ))}
         </Grid>
