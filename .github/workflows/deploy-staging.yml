@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: Existing webapp Git tag to deploy to staging
+        description: Release tag (created from main if missing; existing tags are reused)
         required: true
         type: string
 
@@ -17,11 +17,12 @@ concurrency:
 
 jobs:
   deploy:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 35
     environment: staging
     permissions:
-      contents: read
+      contents: write
       id-token: write
     env:
       AWS_REGION: us-east-2
@@ -44,12 +45,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          ref: refs/tags/${{ inputs.release_tag }}
+          ref: main
+          fetch-depth: 0
 
-      - name: Record release source
+      - name: Resolve release source
         id: source
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
         shell: bash
-        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --refs origin "refs/tags/$RELEASE_TAG" > "$RUNNER_TEMP/release-ref.txt"; then
+            git fetch --no-tags origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+            git checkout --detach "refs/tags/$RELEASE_TAG^{commit}"
+            echo 'tag_exists=true' >> "$GITHUB_OUTPUT"
+          else
+            status=$?
+            if [ "$status" -ne 2 ]; then exit "$status"; fi
+            echo 'tag_exists=false' >> "$GITHUB_OUTPUT"
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Validate configuration
         shell: bash
@@ -70,6 +85,19 @@ jobs:
         run: |
           npm ci --no-audit --no-fund
           node --test tests/*.test.*
+
+      - name: Create release tag after tests pass
+        if: steps.source.outputs.tag_exists == 'false'
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          RELEASE_SHA: ${{ steps.source.outputs.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git tag -a "$RELEASE_TAG" "$RELEASE_SHA" -m "Staging release $RELEASE_TAG"
+          git push origin "refs/tags/$RELEASE_TAG"
 
       - name: Configure AWS credentials through OIDC
         uses: aws-actions/configure-aws-credentials@v6.1.0
@@ -143,6 +171,8 @@ jobs:
         env:
           EXPECTED_TASK: ${{ steps.deploy.outputs.task-definition-arn }}
           IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          RELEASE_SHA: ${{ steps.source.outputs.sha }}
         shell: bash
         run: |
           set -euo pipefail
@@ -158,6 +188,8 @@ jobs:
           {
             echo '### Staging webapp deployed'
             echo '- URL: https://webapp-staging.eezevent.com'
+            printf -- '- Release tag: `%s`\n' "$RELEASE_TAG"
+            printf -- '- Source commit: `%s`\n' "$RELEASE_SHA"
             printf -- '- Image digest: `%s`\n' "$IMAGE_DIGEST"
             printf -- '- Task definition: `%s`\n' "$EXPECTED_TASK"
           } >> "$GITHUB_STEP_SUMMARY"
