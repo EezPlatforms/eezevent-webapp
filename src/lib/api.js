@@ -365,3 +365,7 @@ export const updateInvitation = (eventId, hostMessage) => requestJson(`/invitati
 export const updateGuestResponse = (eventId, responseId, payload) => requestJson(`/invitations/events/${eventId}/responses/${responseId}`, {
   method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload),
 });
+
+export const updateEventLocation = (eventId, payload) => requestJson(`/events/${eventId}/location`, {
+  method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload),
+});

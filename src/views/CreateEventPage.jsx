@@ -1,4 +1,5 @@
 "use client";
+import EventLocationFields from "../components/EventLocationFields";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
@@ -60,6 +61,7 @@ export default function CreateEventPage({ returnTo = "" }) {
     name: "",
     description: "",
     zipcode: "",
+    venue_booking_planned:null, address_line1:"", address_line2:"", city:"", state:"",
     start_time: "",
     end_time: "",
     number_of_guests: "",
@@ -221,6 +223,7 @@ export default function CreateEventPage({ returnTo = "" }) {
       }
     }
 
+    if(typeof eventData.venue_booking_planned!=='boolean'){setError('Choose whether you already know your event venue.');return;}
     const start = new Date(eventData.start_time);
     const end = new Date(eventData.end_time);
     if (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime()) && start >= end) {
@@ -412,16 +415,13 @@ export default function CreateEventPage({ returnTo = "" }) {
                       sx={formFieldSx}
                     />
                   </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      fullWidth
-                      label="ZIP code"
-                      value={eventData.zipcode}
-                      onChange={(next) => updateField("zipcode", next.target.value)}
-                      sx={formFieldSx}
-                    />
+                  <Grid size={12}>
+                    <EventLocationFields value={eventData} onChange={next=>{
+                      setEventData(next);
+                      if(next.venue_booking_planned===true && eventData.venue_booking_planned!==true)setSelectedServiceTypes(current=>[...new Set([...current,'VENUE_RENTALS'])]);
+                    }} disabled={submitting}/>
                   </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
+                  <Grid size={12}>
                     <TextField
                       fullWidth
                       required
@@ -439,29 +439,33 @@ export default function CreateEventPage({ returnTo = "" }) {
                       ))}
                     </TextField>
                   </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      fullWidth
-                      required
-                      label="Start time"
-                      type="datetime-local"
-                      value={normalizeDateTimeLocal(eventData.start_time)}
-                      onChange={(next) => updateField("start_time", next.target.value)}
-                      InputLabelProps={{ shrink: true }}
-                      sx={formFieldSx}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      fullWidth
-                      required
-                      label="End time"
-                      type="datetime-local"
-                      value={normalizeDateTimeLocal(eventData.end_time)}
-                      onChange={(next) => updateField("end_time", next.target.value)}
-                      InputLabelProps={{ shrink: true }}
-                      sx={formFieldSx}
-                    />
+                  <Grid size={12}>
+                    <Grid container spacing={2}>
+                      <Grid size={{ xs: 12, md: 6 }}>
+                        <TextField
+                          fullWidth
+                          required
+                          label="Start date & time"
+                          type="datetime-local"
+                          value={normalizeDateTimeLocal(eventData.start_time)}
+                          onChange={(next) => updateField("start_time", next.target.value)}
+                          InputLabelProps={{ shrink: true }}
+                          sx={formFieldSx}
+                        />
+                      </Grid>
+                      <Grid size={{ xs: 12, md: 6 }}>
+                        <TextField
+                          fullWidth
+                          required
+                          label="End date & time"
+                          type="datetime-local"
+                          value={normalizeDateTimeLocal(eventData.end_time)}
+                          onChange={(next) => updateField("end_time", next.target.value)}
+                          InputLabelProps={{ shrink: true }}
+                          sx={formFieldSx}
+                        />
+                      </Grid>
+                    </Grid>
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <TextField
