@@ -150,15 +150,32 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          aws ecs describe-services --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" > "$RUNNER_TEMP/deployed-service.json"
-          jq -e --arg expected "$EXPECTED_TASK" '
-            (.failures | length == 0) and
-            (.services | length == 1) and
-            (.services[0] | .taskDefinition == $expected and
-              .runningCount == .desiredCount and .pendingCount == 0 and
-              any(.deployments[]; .status == "PRIMARY" and
-                .taskDefinition == $expected and .rolloutState == "COMPLETED"))
-          ' "$RUNNER_TEMP/deployed-service.json"
+          verified=false
+          for attempt in $(seq 1 24); do
+            aws ecs describe-services --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" > "$RUNNER_TEMP/deployed-service.json"
+            if jq -e --arg expected "$EXPECTED_TASK" '
+              (.failures | length == 0) and
+              (.services | length == 1) and
+              (.services[0] | .taskDefinition == $expected and
+                .runningCount == .desiredCount and .pendingCount == 0 and
+                any(.deployments[]; .status == "PRIMARY" and
+                  .taskDefinition == $expected and .rolloutState == "COMPLETED"))
+            ' "$RUNNER_TEMP/deployed-service.json" > /dev/null; then
+              verified=true
+              break
+            fi
+            echo "Waiting for ECS to confirm the expected release is complete ($attempt/24)."
+            jq '{failures, services: [.services[] | {taskDefinition, runningCount, desiredCount, pendingCount,
+              deployments: [.deployments[] | {status, taskDefinition, rolloutState, rolloutStateReason}]}]}' \
+              "$RUNNER_TEMP/deployed-service.json"
+            if (( attempt < 24 )); then sleep 10; fi
+          done
+          if [[ "$verified" != true ]]; then
+            echo "::error::ECS did not confirm the expected task definition completed; check for a failed deployment or rollback."
+            jq '{failures, services: [.services[] | {taskDefinition, deployments, events: .events[:10]}]}' \
+              "$RUNNER_TEMP/deployed-service.json"
+            exit 1
+          fi
           {
             echo '### Production webapp deployed'
             echo '- URL: https://web.eezevent.com'
