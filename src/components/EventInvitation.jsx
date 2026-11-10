@@ -24,7 +24,7 @@ export default function EventInvitation({ eventId }) {
   const url = data?.invitation ? `${window.location.origin}/invite/${data.invitation.token}` : '';
   const message = `You're invited to ${data?.invitation?.name}! RSVP: ${url}`;
   return <>
-    <Button startIcon={<MailOutlineRoundedIcon />} onClick={show} sx={{alignSelf:'flex-start'}}>Invitation & RSVPs</Button>
+    <Button color="secondary" startIcon={<MailOutlineRoundedIcon />} onClick={show} sx={{alignSelf:'flex-start',paddingInline:1,paddingBlock:.5,minHeight:44}}>Invitation & RSVPs</Button>
     <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm" scroll="paper" aria-labelledby="invitation-title" PaperProps={{sx:{borderRadius:4,...(tab===1?{height:'min(780px, calc(100dvh - 64px))'}:{})}}}>
       <DialogTitle id="invitation-title" sx={{pr:7,pt:3,pb:1}}>Invitation & RSVPs
         <IconButton aria-label="Close invitation" onClick={() => setOpen(false)} sx={{position:'absolute',right:16,top:16}}><CloseRoundedIcon /></IconButton>
