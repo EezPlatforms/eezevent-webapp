@@ -23,14 +23,14 @@ export default function InvitationPage({ token }) {
     {invitation && <><Typography variant="h4" component="h1">{invitation.name}</Typography>
       <InvitationDetails invitation={invitation} />
       <Box component="img" src={normalizeAssetUrl(invitation.image_url)} alt={`Invitation to ${invitation.name}`} sx={{width:'100%',height:{xs:260,sm:320},objectFit:'contain',borderRadius:3,bgcolor:'action.hover'}} />
-      {invitation.host_message && <Box sx={{p:2.5,borderRadius:2,bgcolor:'action.hover',borderLeft:'3px solid',borderColor:'primary.main'}}>
-        <Typography variant="subtitle2" color="primary" sx={{mb:1}}>A message from {invitation.host_name || 'your host'}</Typography>
+      {invitation.host_message && <Box sx={{p:2.5,borderRadius:2,bgcolor:'action.hover',borderLeft:'3px solid',borderColor:theme=>theme.palette.mode==='dark'?theme.palette.primary.light:theme.palette.primary.main}}>
+        <Typography variant="subtitle2" color="text.primary" sx={{mb:1,overflowWrap:'anywhere'}}>A message from {invitation.host_name || 'your host'}</Typography>
         <Typography sx={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{invitation.host_message}</Typography>
       </Box>}
       {message ? <Alert severity="success">{message}</Alert> : <Stack component="form" spacing={2} onSubmit={submit}>
         <Typography variant="h5">Will you attend?</Typography>
-        <Typography variant="body2" color="text.secondary">Provide an email address or phone number. You can include both.</Typography>
-        {['name','email'].map(field=><TextField key={field} label={field==='email'?'Email address':'Your name'} type={field==='email'?'email':'text'} required={field==='name'} value={form[field]} inputProps={{maxLength:field==='name'?150:254}} onChange={e=>setForm(current=>({...current,[field]:e.target.value}))} />)}
+        <Typography variant="body2" color="text.secondary">Provide an email address or phone number. If you include an email, we’ll send your RSVP confirmation and venue updates.</Typography>
+        {['name','email'].map(field=><TextField key={field} label={field==='email'?'Email address (optional)':'Your name'} type={field==='email'?'email':'text'} required={field==='name'} value={form[field]} inputProps={{maxLength:field==='name'?150:254}} onChange={e=>setForm(current=>({...current,[field]:e.target.value}))} />)}
         <RSVPPhoneField value={form.phone} onChange={phone=>setForm(current=>({...current,phone}))}/>
         <ToggleButtonGroup
           exclusive fullWidth value={form.response} disabled={busy} aria-label="RSVP response"
