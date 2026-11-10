@@ -27,7 +27,7 @@ export default function HomePage() {
       <Typography sx={{ fontSize: { xs: 18, md: 21 }, lineHeight: 1.65 }} color="text.secondary">Find the right vendors for your event, or sign in to your workspace.</Typography>
     </Box>
     <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1.35fr) minmax(0, 1fr)" }, gap: 3 }}>
-      <Paper component="section" sx={{ p: { xs: 3, md: 4 }, border: "1px solid", borderColor: "divider", borderRadius: 3, boxShadow: "none" }}>
+      <Paper component="section" sx={{ order: { xs: 2, md: 1 }, p: { xs: 3, md: 4 }, border: "1px solid", borderColor: "divider", borderRadius: 3, boxShadow: "none" }}>
         <Stack spacing={2.5}>
           <Box sx={{ width: 48, height: 48, bgcolor: "primary.main", color: "primary.contrastText", borderRadius: 2, display: "grid", placeItems: "center" }}><SearchRoundedIcon /></Box>
           <Box><Typography component="h2" variant="h5" gutterBottom>Find vendors near you</Typography><Typography color="text.secondary">Explore services, compare packages, and read reviews. No account needed.</Typography></Box>
@@ -37,7 +37,7 @@ export default function HomePage() {
           </Stack>
         </Stack>
       </Paper>
-      <Paper component="section" sx={{ p: { xs: 3, md: 4 }, border: "1px solid", borderColor: "divider", borderRadius: 3, boxShadow: "none" }}>
+      <Paper component="section" sx={{ order: { xs: 1, md: 2 }, p: { xs: 3, md: 4 }, border: "1px solid", borderColor: "divider", borderRadius: 3, boxShadow: "none" }}>
         <Stack spacing={3}>
           {isAuthenticated ? <>
             <Typography component="h2" variant="h5">Good to see you{auth?.userFirstName ? `, ${auth.userFirstName}` : ""}.</Typography>

@@ -81,8 +81,8 @@ const EventCard = memo(function EventCard({ event, onLocationSaved }) {
   const created = event.created_at ? new Date(event.created_at) : null;
   const createdLabel = created && !Number.isNaN(created.getTime())
     ? new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(created) : "";
-  return <Paper component="article" sx={{ height: "100%", p: { xs: 2.5, sm: 3 }, border: "1px solid", borderColor: "divider", borderRadius: 3, bgcolor: "background.paper", boxShadow: "0 4px 20px rgba(7,11,42,.05)" }}>
-    <Stack spacing={2.5}>
+  return <Paper component="article" sx={{ height: "100%", p: { xs: 2, sm: 2.5 }, border: "1px solid", borderColor: "divider", borderRadius: 3, bgcolor: "background.paper", boxShadow: "0 4px 20px rgba(7,11,42,.05)" }}>
+    <Stack spacing={1.25}>
       <Stack direction="row" gap={2} alignItems="flex-start">
         <EventThumbnail event={event} />
         <Box sx={{ minWidth: 0, flex: 1 }}>
@@ -95,7 +95,7 @@ const EventCard = memo(function EventCard({ event, onLocationSaved }) {
         </Box>
       </Stack>
       {event.description && <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{event.description}</Typography>}
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", sm: "minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr)" }, gap: { xs: 2, sm: 2.5 }, pt: 2, borderTop: "1px solid", borderColor: "divider" }}>
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", sm: "minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr)" }, gap: { xs: 1.25, sm: 1.5 }, pt: 1.25, borderTop: "1px solid", borderColor: "divider" }}>
         <Stack direction="row" spacing={1} sx={{ gridColumn: { xs: "1 / -1", sm: "auto" }, minWidth: 0 }}>
           <CalendarTodayRoundedIcon sx={{ fontSize: 18, color: "text.secondary", mt: .25 }} />
           <Box><Typography variant="caption" color="text.secondary">Date & time</Typography><Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.6, mt: .25 }}>{formatDateRange(event.start_time, event.end_time)}</Typography></Box>
@@ -110,7 +110,7 @@ const EventCard = memo(function EventCard({ event, onLocationSaved }) {
         </Stack>
       </Box>
       <EventLocationEditor event={event} onSaved={onLocationSaved} />
-      <Stack direction="row" gap={1.5} alignItems="center" justifyContent="space-between" flexWrap="wrap">
+      <Stack direction="row" gap={{ xs: .5, sm: 1 }} alignItems="center" justifyContent="space-between" flexWrap="wrap">
         <Stack direction="row" gap={1} alignItems="center" flexWrap="wrap">
           <Chip size="small" label={event.status || "In Progress"} icon={<Box component="span" sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "currentColor" }} />} sx={{ height: 26, border: "none", borderRadius: 1.25, fontSize: 12, bgcolor: theme => alpha(theme.palette[statusTone].main, .08), color: theme => theme.palette.mode === "light" ? theme.palette[statusTone].dark : theme.palette[statusTone].light, "& .MuiChip-icon": { ml: 1.25, color: "inherit" }, "& .MuiChip-label": { px: 1 } }} />
           <EventInvitation eventId={event.event_id} />

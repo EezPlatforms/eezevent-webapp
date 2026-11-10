@@ -18,7 +18,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useNavigate } from "../lib/navigation";
 import { useAuth } from "../lib/auth";
 import {
@@ -29,6 +29,8 @@ import {
   fetchServiceTypes,
 } from "../lib/api";
 import { getServiceHintsForEventType } from "../lib/eventServiceHints";
+
+import { endTimeForStart, offsetEventTime } from "../lib/eventDateTime";
 
 function toNumber(value) {
   if (value === "" || value == null) return 0;
@@ -53,6 +55,36 @@ export default function CreateEventPage({ returnTo = "" }) {
   const [loadingTypes, setLoadingTypes] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const errorRef = useRef(null);
+  const formRef = useRef(null);
+  const errorFieldRef = useRef(null);
+  const [errorAttempt, setErrorAttempt] = useState(0);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const reportError = (message, field = null) => {
+    const target = typeof field === "string" ? formRef.current?.querySelector(`#${field}`) : field;
+    errorFieldRef.current = target;
+    if (target?.id) {
+      setFieldErrors({ [target.id]: message });
+      setError("");
+    } else {
+      setFieldErrors({});
+      setError(message);
+    }
+    setErrorAttempt(attempt => attempt + 1);
+  };
+  useEffect(() => {
+    if (!errorAttempt) return;
+    const target = errorFieldRef.current || errorRef.current;
+    const field = target?.querySelector?.("input:not([type=hidden]), button, [role=combobox]") || target;
+    field?.focus({ preventScroll: true });
+    target?.scrollIntoView({ block: "center", behavior: "instant" });
+  }, [errorAttempt]);
+  const clearFieldError = id => setFieldErrors(current => {
+    if (!current[id]) return current;
+    const next = { ...current };
+    delete next[id];
+    return next;
+  });
   const [successMessage, setSuccessMessage] = useState("");
   const [clientLookupLoading, setClientLookupLoading] = useState(false);
   const [clientLookupError, setClientLookupError] = useState("");
@@ -149,13 +181,24 @@ export default function CreateEventPage({ returnTo = "" }) {
   );
 
   const updateField = (key, value) => {
-    setEventData((current) => ({ ...current, [key]: value }));
+    if (key === "end_time" && value && eventData.start_time && new Date(value) <= new Date(eventData.start_time)) {
+      setFieldErrors(current => ({ ...current, "event-end": "End time must be after the start time." }));
+      return;
+    }
+    setEventData((current) => ({
+      ...current,
+      [key]: value,
+      ...(key === "start_time" ? { end_time: endTimeForStart(value, current.end_time) } : {}),
+    }));
+    clearFieldError({ name: "event-name", event_type: "event-type", start_time: "event-start", end_time: "event-end" }[key]);
+    if (key === "start_time") clearFieldError("event-end");
     setError("");
     setSuccessMessage("");
   };
 
   const updateClientField = (key, value) => {
     setClientData((current) => ({ ...current, [key]: value }));
+    clearFieldError({ email: "client-email", first_name: "client-first-name", last_name: "client-last-name" }[key]);
     setClientLookupError("");
     if (key === "email") {
       setClientLocked(false);
@@ -207,27 +250,38 @@ export default function CreateEventPage({ returnTo = "" }) {
     setError("");
     setSuccessMessage("");
 
-    if (!eventData.name || !eventData.start_time || !eventData.end_time || !eventData.event_type) {
-      setError("Event name, type, start time, and end time are required.");
+    setFieldErrors({});
+    // Native constraints and custom rules both render errors at their inputs.
+    if (!formRef.current.checkValidity()) {
+      const field = formRef.current.querySelector(":invalid");
+      const label = field?.labels?.[0]?.textContent?.replace(/\s*\*$/, "") || "This field";
+      reportError(`${label}: ${field?.validationMessage || "Please check this value."}`, field);
       return;
     }
-
     if (isEventPlanner) {
-      if (!clientData.email) {
-        setError("Client email is required.");
+      if (!clientData.email.trim()) {
+        reportError("Client email is required.", "client-email");
         return;
       }
-      if (!clientLocked && (!clientData.first_name || !clientData.last_name)) {
-        setError("Client first and last name are required for new clients.");
+      if (!clientLocked && (!clientData.first_name.trim() || !clientData.last_name.trim())) {
+        reportError("Client first and last name are required for new clients.",
+          !clientData.first_name.trim() ? "client-first-name" : "client-last-name");
         return;
       }
     }
-
-    if(typeof eventData.venue_booking_planned!=='boolean'){setError('Choose whether you already know your event venue.');return;}
+    if (!eventData.name.trim() || !eventData.event_type || !eventData.start_time || !eventData.end_time) {
+      reportError("Event name, type, start time, and end time are required.",
+        !eventData.name.trim() ? "event-name" : !eventData.event_type ? "event-type" : !eventData.start_time ? "event-start" : "event-end");
+      return;
+    }
+    if (typeof eventData.venue_booking_planned !== "boolean") {
+      reportError("Choose whether you already know your event venue.", "event-venue-choice");
+      return;
+    }
     const start = new Date(eventData.start_time);
     const end = new Date(eventData.end_time);
     if (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime()) && start >= end) {
-      setError("Start time must be before end time.");
+      reportError("Start time must be before end time.", "event-end");
       return;
     }
 
@@ -266,7 +320,7 @@ export default function CreateEventPage({ returnTo = "" }) {
         navigate("/events", { replace: true });
       }, 500);
     } catch (nextError) {
-      setError(nextError.message || "Failed to create event.");
+      reportError(nextError.message || "Failed to create event.");
     } finally {
       setSubmitting(false);
     }
@@ -293,7 +347,7 @@ export default function CreateEventPage({ returnTo = "" }) {
             Create event
           </Typography>
           <Typography color="text.secondary" sx={{ mt: 1, maxWidth: 760 }}>
-            Use the same event setup flow as the mobile app: event details first, then service
+            Add your event details first, then service
             needs, then team collaboration after the event is saved.
           </Typography>
         </Box>
@@ -307,12 +361,14 @@ export default function CreateEventPage({ returnTo = "" }) {
         </Button>
       </Stack>
 
-      {error ? <Alert severity="error">{error}</Alert> : null}
+      {error ? <Alert ref={errorRef} severity="error" tabIndex={-1}
+        sx={{ scrollMarginTop: 12, "&:focus-visible": { outline: "2px solid", outlineColor: "error.main", outlineOffset: 2 } }}
+      >{error}</Alert> : null}
       {successMessage ? <Alert severity="success">{successMessage}</Alert> : null}
 
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, lg: 8 }}>
-          <Stack component="form" spacing={3} onSubmit={handleSubmit}>
+          <Stack component="form" ref={formRef} noValidate spacing={3} onSubmit={handleSubmit}>
             {isEventPlanner ? (
               <Paper
                 sx={{
@@ -330,6 +386,9 @@ export default function CreateEventPage({ returnTo = "" }) {
                     <Grid size={{ xs: 12, md: 8 }}>
                       <TextField
                         fullWidth
+                        id="client-email"
+                        error={Boolean(fieldErrors["client-email"])}
+                        helperText={fieldErrors["client-email"]}
                         label="Client email"
                         value={clientData.email}
                         onChange={(next) => updateClientField("email", next.target.value)}
@@ -360,6 +419,9 @@ export default function CreateEventPage({ returnTo = "" }) {
                     <Grid size={{ xs: 12, md: 6 }}>
                       <TextField
                         fullWidth
+                        id="client-first-name"
+                        error={Boolean(fieldErrors["client-first-name"])}
+                        helperText={fieldErrors["client-first-name"]}
                         label="First name"
                         value={clientData.first_name}
                         onChange={(next) => updateClientField("first_name", next.target.value)}
@@ -370,6 +432,9 @@ export default function CreateEventPage({ returnTo = "" }) {
                     <Grid size={{ xs: 12, md: 6 }}>
                       <TextField
                         fullWidth
+                        id="client-last-name"
+                        error={Boolean(fieldErrors["client-last-name"])}
+                        helperText={fieldErrors["client-last-name"]}
                         label="Last name"
                         value={clientData.last_name}
                         onChange={(next) => updateClientField("last_name", next.target.value)}
@@ -409,6 +474,9 @@ export default function CreateEventPage({ returnTo = "" }) {
                     <TextField
                       fullWidth
                       required
+                      id="event-name"
+                      error={Boolean(fieldErrors["event-name"])}
+                      helperText={fieldErrors["event-name"]}
                       label="Event name"
                       value={eventData.name}
                       onChange={(next) => updateField("name", next.target.value)}
@@ -416,16 +484,23 @@ export default function CreateEventPage({ returnTo = "" }) {
                     />
                   </Grid>
                   <Grid size={12}>
-                    <EventLocationFields value={eventData} onChange={next=>{
+                    <Box id="event-venue-choice" tabIndex={-1}><EventLocationFields errors={fieldErrors} value={eventData} onChange={next=>{
                       setEventData(next);
+                      for (const key of ["venue_booking_planned", "address_line1", "address_line2", "city", "state", "zipcode"]) {
+                        if (next[key] !== eventData[key]) clearFieldError(key === "venue_booking_planned" ? "event-venue-choice" : `event-location-${key}`);
+                      }
+                      setError("");
                       if(next.venue_booking_planned===true && eventData.venue_booking_planned!==true)setSelectedServiceTypes(current=>[...new Set([...current,'VENUE_RENTALS'])]);
-                    }} disabled={submitting}/>
+                    }} disabled={submitting}/></Box>
                   </Grid>
                   <Grid size={12}>
                     <TextField
                       fullWidth
                       required
                       select
+                      id="event-type"
+                      error={Boolean(fieldErrors["event-type"])}
+                      helperText={fieldErrors["event-type"]}
                       label="Event type"
                       value={eventData.event_type}
                       onChange={(next) => updateField("event_type", next.target.value)}
@@ -445,6 +520,9 @@ export default function CreateEventPage({ returnTo = "" }) {
                         <TextField
                           fullWidth
                           required
+                          id="event-start"
+                          error={Boolean(fieldErrors["event-start"])}
+                          helperText={fieldErrors["event-start"]}
                           label="Start date & time"
                           type="datetime-local"
                           value={normalizeDateTimeLocal(eventData.start_time)}
@@ -457,9 +535,13 @@ export default function CreateEventPage({ returnTo = "" }) {
                         <TextField
                           fullWidth
                           required
+                          id="event-end"
+                          error={Boolean(fieldErrors["event-end"])}
+                          helperText={fieldErrors["event-end"] || "End time must be after the start time. Defaults to one hour later."}
                           label="End date & time"
                           type="datetime-local"
                           value={normalizeDateTimeLocal(eventData.end_time)}
+                          inputProps={{ min: offsetEventTime(eventData.start_time, 1) || undefined, step: 60 }}
                           onChange={(next) => updateField("end_time", next.target.value)}
                           InputLabelProps={{ shrink: true }}
                           sx={formFieldSx}
@@ -513,8 +595,7 @@ export default function CreateEventPage({ returnTo = "" }) {
                   <Typography variant="h5">Preferred services</Typography>
                 </Stack>
                 <Typography color="text.secondary">
-                  Stars highlight services commonly hired for this event type, matching the mobile
-                  event setup flow.
+                  Stars highlight services commonly hired for this event type.
                 </Typography>
                 <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                   {serviceTypes.map((type) => {
