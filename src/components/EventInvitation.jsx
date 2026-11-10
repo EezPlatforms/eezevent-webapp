@@ -69,9 +69,9 @@ export default function EventInvitation({ eventId }) {
               <Typography variant="body2" color="text.secondary">Guests can RSVP from this link without creating an account.</Typography>
               <TextField label="Invitation link" value={url} fullWidth size="small" slotProps={{input:{readOnly:true}}}/>
               <Stack direction="row" flexWrap="wrap" gap={1}>
-                <Button variant="outlined" startIcon={<ContentCopyRoundedIcon/>} onClick={async () => {try {await navigator.clipboard.writeText(url);setCopied(true);} catch {setError('Copy the link shown above.');}}}>{copied ? 'Copied' : 'Copy'}</Button>
-                <Button variant="outlined" href={`sms:?body=${encodeURIComponent(message)}`}>SMS</Button>
-                <Button variant="outlined" href={`https://wa.me/?text=${encodeURIComponent(message)}`} target="_blank" rel="noopener noreferrer">WhatsApp</Button>
+                <Button variant="outlined" color="secondary" startIcon={<ContentCopyRoundedIcon/>} onClick={async () => {try {await navigator.clipboard.writeText(url);setCopied(true);} catch {setError('Copy the link shown above.');}}}>{copied ? 'Copied' : 'Copy'}</Button>
+                <Button variant="outlined" color="secondary" href={`sms:?body=${encodeURIComponent(message)}`}>SMS</Button>
+                <Button variant="outlined" color="secondary" href={`https://wa.me/?text=${encodeURIComponent(message)}`} target="_blank" rel="noopener noreferrer">WhatsApp</Button>
               </Stack>
             </Stack>}
           </>}
