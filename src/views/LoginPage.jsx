@@ -27,12 +27,14 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Navigate, RouterLink, useLocation, useNavigate } from "../lib/navigation";
 import { isSocialOnlyAuth } from "../lib/authMode";
+import { isInvitationReturnPath } from "../lib/returnPath";
 import { useAuth } from "../lib/auth";
 
 export default function LoginPage({ initialLoginType = "client", initialNextPath = "/" }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, login, loginWithGoogle, loginWithApple, resendValidationCode, validateEmail } = useAuth();
+  const invitationLogin = isInvitationReturnPath(initialNextPath);
   const [loginType, setLoginType] = useState(initialLoginType);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -225,8 +227,8 @@ export default function LoginPage({ initialLoginType = "client", initialNextPath
         <Stack spacing={2.5}>
           <Stack spacing={1.5} alignItems="center" sx={{ textAlign: "center", mb: .5 }}>
             <BrandLogo />
-            <Typography component="h1" sx={{ fontSize: { xs: 29, sm: 32 }, fontWeight: 700, lineHeight: 1.2, letterSpacing: "-.025em" }}>Welcome back</Typography>
-            <Typography color="text.secondary" sx={{ fontSize: 16 }}>Choose your account to continue.</Typography>
+            <Typography component="h1" sx={{ fontSize: { xs: 29, sm: 32 }, fontWeight: 700, lineHeight: 1.2, letterSpacing: "-.025em" }}>{invitationLogin ? "Log in to manage your RSVP" : "Welcome back"}</Typography>
+            <Typography color="text.secondary" sx={{ fontSize: 16 }}>{invitationLogin ? "Use the same email address you provided when responding." : "Choose your account to continue."}</Typography>
           </Stack>
 
           <ToggleButtonGroup
@@ -255,11 +257,9 @@ export default function LoginPage({ initialLoginType = "client", initialNextPath
             }}
           >
             <ToggleButton value="vendor"><StorefrontOutlinedIcon />Business</ToggleButton>
-            <ToggleButton value="client"><PersonOutlineRoundedIcon />Host</ToggleButton>
+            <ToggleButton value="client"><PersonOutlineRoundedIcon />Host or Guest</ToggleButton>
           </ToggleButtonGroup>
-          <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center", lineHeight: 1.6 }}>
-            {loginType === "vendor" ? "Access your business account and services." : "Access your events and planning workspace."}
-          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center", lineHeight: 1.6 }}>{loginType === "vendor" ? "Manage your services and bookings." : "Plan an event or manage your RSVP."}</Typography>
 
           {error ? <Alert severity="error">{error}</Alert> : null}
           {validationMessage ? <Alert severity="success">{validationMessage}</Alert> : null}
@@ -328,7 +328,7 @@ export default function LoginPage({ initialLoginType = "client", initialNextPath
                 endIcon={<ArrowForwardRoundedIcon />}
                 disabled={loading}
               >
-                {loading ? "Signing in..." : `Sign in as ${loginType === "vendor" ? "Business" : "Host"}`}
+                {loading ? "Signing in..." : `Sign in as ${loginType === "vendor" ? "Business" : "Host or Guest"}`}
               </Button>
             </Stack>
           ) : null}

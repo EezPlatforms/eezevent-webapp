@@ -5,3 +5,8 @@ export const safeReturnPath = (value, fallback = "/") => {
     return url.origin === "https://eezevent.com" ? `${url.pathname}${url.search}${url.hash}` : fallback;
   } catch { return fallback; }
 };
+
+export const isInvitationReturnPath = value => {
+  const path = safeReturnPath(value);
+  return /^\/invite\/[^/?#]+\/?(?:[?#].*)?$/.test(path);
+};
