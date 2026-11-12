@@ -354,6 +354,10 @@ export const uploadInvitationImage = (eventId, file) => {
   return requestJson(`/invitations/events/${eventId}/image`, { method: 'POST', body });
 };
 export const getPublicInvitation = (token) => requestJson(`/invitations/${encodeURIComponent(token)}`);
+export const getMyInvitationResponse = (token) => requestJson(`/invitations/${encodeURIComponent(token)}/response`, { cache: 'no-store' });
+export const updateMyInvitationResponse = (token, payload) => requestJson(`/invitations/${encodeURIComponent(token)}/response`, {
+  method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+});
 export const submitInvitationRSVP = (token, payload) => requestJson(`/invitations/${encodeURIComponent(token)}/rsvp`, {
   method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
 });

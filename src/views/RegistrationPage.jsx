@@ -1,4 +1,5 @@
 "use client";
+import { isInvitationReturnPath } from "../lib/returnPath";
 import { useEffect, useState } from "react";
 import { Alert, Box, Button, Checkbox, CircularProgress, Divider, FormControlLabel, IconButton, InputAdornment, Link, Paper, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
@@ -33,7 +34,8 @@ export default function RegistrationPage({ nextPath = "/" }) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const googleConfigured = Boolean(process.env.NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
-  const label = accountType === "vendor" ? "Business" : "Host";
+  const invitationSignup = isInvitationReturnPath(nextPath);
+  const label = accountType === "vendor" ? "Business" : "Host or Guest";
 
   useEffect(() => {
     let active = true;
@@ -130,8 +132,8 @@ export default function RegistrationPage({ nextPath = "/" }) {
     <Stack spacing={2.5}>
       <Stack spacing={1.5} alignItems="center" sx={{ textAlign: "center", mb: .5 }}>
         <BrandLogo />
-        <Typography component="h1" sx={{ fontSize: { xs: 29, sm: 32 }, fontWeight: 700, lineHeight: 1.2, letterSpacing: "-.025em" }}>{stage === "verify" ? "Check your email" : stage === "complete" ? "You’re all set" : "Create your account"}</Typography>
-        <Typography color="text.secondary" sx={{ fontSize: 16 }}>{stage === "register" ? "Choose how you’ll use EezEvent." : `${label} account · ${form.email}`}</Typography>
+        <Typography component="h1" sx={{ fontSize: { xs: 29, sm: 32 }, fontWeight: 700, lineHeight: 1.2, letterSpacing: "-.025em" }}>{stage === "verify" ? "Check your email" : stage === "complete" ? "You’re all set" : invitationSignup ? "Create an account to manage your RSVP" : "Create your account"}</Typography>
+        <Typography color="text.secondary" sx={{ fontSize: 16 }}>{stage === "register" ? (invitationSignup ? "Use the same email address you provided when responding." : "Choose how you’ll use EezEvent.") : `${label} account · ${form.email}`}</Typography>
       </Stack>
       {error && <Alert severity="error">{error}</Alert>}
       {notice && <Alert severity="success">{notice}</Alert>}
@@ -148,9 +150,9 @@ export default function RegistrationPage({ nextPath = "/" }) {
             },
           }}>
           <ToggleButton value="vendor"><StorefrontOutlinedIcon />Business</ToggleButton>
-          <ToggleButton value="client"><PersonOutlineRoundedIcon />Host</ToggleButton>
+          <ToggleButton value="client"><PersonOutlineRoundedIcon />Host or Guest</ToggleButton>
         </ToggleButtonGroup>
-        <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center", lineHeight: 1.6 }}>{accountType === "vendor" ? "Showcase your services and connect with hosts." : "Plan your events and discover local vendors."}</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center", lineHeight: 1.6 }}>{accountType === "vendor" ? "Manage your services and bookings." : "Plan an event or manage your RSVP."}</Typography>
         <Stack component="form" onSubmit={submit} spacing={2}>
           {!socialOnly && <>
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
