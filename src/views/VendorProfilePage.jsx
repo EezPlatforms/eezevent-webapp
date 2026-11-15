@@ -4,12 +4,17 @@ import { useAuth } from "../lib/auth";
 import SendRoundedIcon from "@mui/icons-material/SendRounded";
 import VendorInquiry from "../components/VendorInquiry";
 import { RouterLink } from "../lib/navigation";
+import { buildProfileImages } from "../lib/vendorProfileImages";
+import { formatContactPhone } from "../lib/contactPhone";
 import { formatPrice } from "../lib/formatPrice";
 import { useEffect, useState } from "react";
 
 
-import { Alert, Box, Button, ButtonBase, Chip, CircularProgress, Divider, Paper, Rating, Stack, Typography } from "@mui/material";
+import { Alert, Box, Button, ButtonBase, Chip, CircularProgress, Divider, Link, Paper, Rating, Stack, Typography } from "@mui/material";
 import ShareRoundedIcon from "@mui/icons-material/ShareRounded";
+import PersonOutlineRoundedIcon from "@mui/icons-material/PersonOutlineRounded";
+import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
+import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import PhotoLibraryOutlinedIcon from "@mui/icons-material/PhotoLibraryOutlined";
@@ -19,13 +24,15 @@ import { fetchPublicServiceProfile, fetchServiceImages, fetchServiceCatalogItems
 
 export default function VendorProfilePage({serviceId,initialProfile,returnTo = null, initialInquiry = false, initialInquiryEvent = ""}) {
   const { auth, isAuthenticated, authReady } = useAuth();
-  const canInquire = authReady && (!isAuthenticated || auth?.userType === "client");
   const [inquiryOpen, setInquiryOpen] = useState(initialInquiry);
   const inquiryParams = new URLSearchParams({ inquiry: "1" });
   if (returnTo) inquiryParams.set("returnTo", returnTo);
   const inquiryPath = `${vendorProfilePath(initialProfile?.service || { service_id: serviceId })}?${inquiryParams}`;
   const [profile, setProfile] = useState(initialProfile || null);
-  const [images, setImages] = useState([]);
+  const canInquire = profile?.service?.can_receive_inquiries === true && authReady && (!isAuthenticated || auth?.userType === "client");
+  const inquiriesUnavailable = profile?.service?.can_receive_inquiries === false && authReady && (!isAuthenticated || auth?.userType === "client");
+  const [portfolioImages, setPortfolioImages] = useState([]);
+  const images = buildProfileImages(profile?.service, portfolioImages);
   const [catalog, setCatalog] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [reviewCount, setReviewCount] = useState(0);
@@ -57,6 +64,7 @@ export default function VendorProfilePage({serviceId,initialProfile,returnTo = n
     setLoading(true);
     setError("");
     setProfile(initialProfile || null);
+    setPortfolioImages([]);
     setReviews([]);
     setViewer(null);
     setOffset(0);
@@ -69,7 +77,7 @@ export default function VendorProfilePage({serviceId,initialProfile,returnTo = n
       if (!active) return;
       if (!p?.service) throw new Error("Vendor profile not found.");
       setProfile(p);
-      setImages(i);
+      setPortfolioImages(i);
       setCatalog(c);
     }).catch(e => { if (active) setError(e.message || "Unable to load profile."); })
       .finally(() => { if (active) setLoading(false); });
@@ -108,6 +116,8 @@ export default function VendorProfilePage({serviceId,initialProfile,returnTo = n
   };
   const service = profile?.service || {};
   const business = profile?.business || {};
+  const businessAddress = [business.street, business.city, business.state, business.zip].filter(Boolean).join(", ");
+  const hasBusinessContact = Boolean(business.business_name || business.contact_name || business.phone || business.email || businessAddress);
   const location = [service.service_city || business.city, service.service_state || business.state].filter(Boolean).join(", ");
   const card = { p: { xs: 2.5, md: 4 }, border: "var(--eez-border-5)", background: "var(--eez-surface-16)", borderRadius: 3, boxShadow: "none" };
   const sectionTitle = { fontSize: { xs: 23, md: 27 }, letterSpacing: "-0.02em", mb: 2.5 };
@@ -122,16 +132,26 @@ export default function VendorProfilePage({serviceId,initialProfile,returnTo = n
   return <Stack spacing={{ xs: 2, md: 2.5 }} sx={{ minWidth: 0 }}>
 
     <Box component="header">
-    {returnTo && <Button component={RouterLink} to={returnTo} scroll={false} startIcon={<ArrowBackRoundedIcon />} sx={{ alignSelf: "flex-start", color: "text.secondary", px: 0, py: .5, mb: 1 }}>Explore vendors</Button>}
-      <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }} gap={2}>
-        <Chip size="small" label={service.type_name || service.type || "Event vendor"} sx={{ color: "var(--eez-ink-3)", borderColor: "var(--eez-outline-3)", letterSpacing: ".04em" }} />
-        <Button variant="outlined" color="secondary" size="small" sx={{ py: .75, px: 1.5 }} startIcon={<ShareRoundedIcon />} onClick={share}>Share profile</Button>
+      <Stack direction="row" gap={1.5} flexWrap="wrap" alignItems="center" sx={{ mb: 1 }}>
+        {returnTo && <Button component={RouterLink} to={returnTo} scroll={false} size="small" startIcon={<ArrowBackRoundedIcon />} sx={{ color: "text.secondary", px: 0, py: .5 }}>Explore vendors</Button>}
+        <Chip size="small" label={service.type_name || service.type || "Event vendor"} sx={{ color: "var(--eez-ink-3)", borderColor: "var(--eez-outline-3)", letterSpacing: ".04em", maxWidth: "100%" }} />
       </Stack>
-      <Typography component="h1" sx={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: { xs: 32, sm: 40, md: 46 }, lineHeight: 1.12, letterSpacing: "-.035em", mt: 1.25, mb: 1.25, overflowWrap: "anywhere" }}>{service.name}</Typography>
-      <Stack direction="row" gap={2} flexWrap="wrap" alignItems="center" sx={{ color: "text.secondary" }}>
-        {business.business_name && <Typography>{business.business_name}</Typography>}
-        {location && <Stack direction="row" gap={0.5} alignItems="center"><LocationOnOutlinedIcon fontSize="small" /><Typography>{location}</Typography></Stack>}
-        <Typography component="a" href="#reviews" sx={{ color: "inherit", textUnderlineOffset: 4 }}>{hasRating ? `★ ${Number(average).toFixed(1)} · ${reviewCount} reviews` : "No reviews yet"}</Typography>
+      <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" alignItems={{ xs: "stretch", md: "center" }} gap={1.5}>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography component="h1" sx={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: { xs: 28, sm: 32, md: 36 }, lineHeight: 1.15, letterSpacing: "-.035em", mb: .75, overflowWrap: "anywhere" }}>{service.name}</Typography>
+          <Stack direction="row" columnGap={2} rowGap={.5} flexWrap="wrap" alignItems="center" sx={{ color: "text.secondary" }}>
+            {business.business_name && <Typography variant="body2">{business.business_name}</Typography>}
+            {location && <Stack direction="row" gap={0.5} alignItems="center"><LocationOnOutlinedIcon fontSize="small" /><Typography variant="body2">{location}</Typography></Stack>}
+            <Typography variant="body2" component="a" href="#reviews" sx={{ color: "inherit", textUnderlineOffset: 4 }}>{hasRating ? `★ ${Number(average).toFixed(1)} · ${reviewCount} reviews` : "No reviews yet"}</Typography>
+          </Stack>
+        </Box>
+        <Stack spacing={.5} sx={{ flexShrink: 0 }}>
+          <Stack direction="row" gap={1} flexWrap="wrap">
+            <Button size="small" variant="outlined" color="secondary" startIcon={<ShareRoundedIcon />} onClick={share}>Share profile</Button>
+            <Button size="small" variant="outlined" color="secondary" startIcon={<WhatsAppIcon />} component="a" href={`https://wa.me/?text=${encodeURIComponent(`Check out ${service.name} on EezEvent: ${shareUrl}`)}`} target="_blank" rel="noopener noreferrer">WhatsApp</Button>
+          </Stack>
+          {copied && <Typography variant="caption" color="text.secondary" role="status" aria-live="polite">Profile link copied. Ready to share.</Typography>}
+        </Stack>
       </Stack>
     </Box>
     {images.length > 0 && <Box component="section" aria-label="Vendor portfolio" sx={{ display: "grid", gridTemplateColumns: images.length > 1 ? { xs: "1fr 1fr", md: images.length === 4 ? "1fr 1fr" : images.length < 5 ? "2fr 1fr" : "2fr 1fr 1fr" } : "1fr", gap: 1.5, borderRadius: 3, overflow: "hidden" }}>
@@ -143,31 +163,56 @@ export default function VendorProfilePage({serviceId,initialProfile,returnTo = n
         </Box>}
       </ButtonBase>)}
     </Box>}
-    <VendorInquiry serviceSlug={service.slug} serviceId={serviceId} serviceName={service.name} returnTo={returnTo} open={inquiryOpen} onOpenChange={setInquiryOpen} initialEvent={initialInquiryEvent} />
-    <Stack spacing={1}>
-      <Stack direction="row" gap={1.25} flexWrap="wrap">
-        <Button variant="contained" startIcon={<ShareRoundedIcon />} onClick={share}>Share this vendor</Button>
-        <Button variant="outlined" color="secondary" startIcon={<WhatsAppIcon />} component="a" href={`https://wa.me/?text=${encodeURIComponent(`Check out ${service.name} on EezEvent: ${shareUrl}`)}`} target="_blank" rel="noopener noreferrer">Share on WhatsApp</Button>
-      </Stack>
-      <Typography variant="caption" color="text.secondary" role="status" aria-live="polite">{copied ? "Profile link copied. Ready to share." : "Share with your event team, friends, or family."}</Typography>
-    </Stack>
+    {inquiriesUnavailable && <Alert severity="info">
+      <Typography fontWeight={700}>In-app inquiries unavailable</Typography>
+      <Typography variant="body2">This vendor does not currently have an active EezEvent subscription, so they can’t receive inquiries in the app.</Typography>
+      {(business.phone || business.email) && <Typography variant="body2" sx={{ mt: .5 }}>You can use their listed contact details to reach them directly.</Typography>}
+    </Alert>}
+    {canInquire && <VendorInquiry serviceSlug={service.slug} serviceId={serviceId} serviceName={service.name} returnTo={returnTo} open={inquiryOpen} onOpenChange={setInquiryOpen} initialEvent={initialInquiryEvent} />}
     <Box component="nav" aria-label="Profile sections" sx={{ display: "flex", gap: { xs: 3, md: 4 }, borderBottom: "var(--eez-border-6)", overflowX: "auto" }}>
-      {[["about", "Overview"], ...(catalog.length ? [["services", "Services & catalog"]] : []), ["reviews", "Reviews"], ...(images.length > 5 ? [["portfolio", "All photos"]] : [])].map(([id, label]) => <Button key={id} component="a" href={`#${id}`} sx={{ color: "text.primary", borderRadius: 0, px: 0, pb: 2, flexShrink: 0, "&:hover": { color: "var(--eez-ink-4)", background: "transparent" } }}>{label}</Button>)}
+      {[["about", "Overview"], ...(hasBusinessContact ? [["contact", "Business information"]] : []), ...(catalog.length ? [["services", "Services & catalog"]] : []), ["reviews", "Reviews"], ...(images.length > 5 ? [["portfolio", "All photos"]] : [])].map(([id, label]) => <Button key={id} component="a" href={`#${id}`} sx={{ color: "text.primary", borderRadius: 0, px: 0, pb: 1, flexShrink: 0, "&:hover": { color: "var(--eez-ink-4)", background: "transparent" } }}>{label}</Button>)}
     </Box>
     <Box sx={{ display: "grid", gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "minmax(0, 1fr) 310px" }, gap: { xs: 3, md: 4 }, alignItems: "start" }}>
     <Stack spacing={3} sx={{ minWidth: 0, "& > *[id]": { scrollMarginTop: 32 } }}>
     <Paper component="section" id="about" sx={card}><Typography component="h2" sx={sectionTitle}>About this service</Typography><Typography color="text.secondary" sx={{ lineHeight: 1.85, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{service.description || "The vendor hasn’t added a description yet."}</Typography>
 
     </Paper>
+    {hasBusinessContact && <Paper component="section" id="contact" aria-labelledby="business-information-title" sx={{ ...card, p: { xs: 2, md: 2.5 } }}>
+      <Typography component="h2" id="business-information-title" sx={{ ...sectionTitle, fontSize: { xs: 20, md: 22 }, mb: 1.5 }}>Business Information</Typography>
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0, 1fr))" }, columnGap: 3, rowGap: 1.5, overflowWrap: "anywhere", "& .MuiLink-root": { typography: "body2", py: .25, color: "var(--eez-ink-3)", "&:hover": { color: "var(--eez-ink-4)" } } }}>
+        {(business.contact_name || business.business_name) && <Stack direction="row" spacing={1} alignItems="flex-start">
+          <PersonOutlineRoundedIcon fontSize="small" sx={{ color: "text.secondary", mt: .25 }} />
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="body2" fontWeight={700}>{business.contact_name || business.business_name}</Typography>
+            {business.contact_name && business.business_name && business.contact_name !== business.business_name && <Typography variant="body2" color="text.secondary">{business.business_name}</Typography>}
+          </Box>
+        </Stack>}
+        {business.phone && <Stack direction="row" spacing={1} alignItems="flex-start">
+          <PhoneOutlinedIcon fontSize="small" sx={{ color: "text.secondary", mt: .25 }} />
+          <Box sx={{ minWidth: 0 }}><Link aria-label={`Call ${business.phone}`} href={`tel:${business.phone.replace(/[^+\d]/g, "")}`} underline="hover" sx={{ display: "block" }}>{formatContactPhone(business.phone)}</Link></Box>
+        </Stack>}
+        {business.email && <Stack direction="row" spacing={1} alignItems="flex-start">
+          <EmailOutlinedIcon fontSize="small" sx={{ color: "text.secondary", mt: .25 }} />
+          <Box sx={{ minWidth: 0 }}><Link aria-label={`Email ${business.email}`} href={`mailto:${business.email}`} underline="hover" sx={{ display: "block" }}>{business.email}</Link></Box>
+        </Stack>}
+        {businessAddress && <Stack direction="row" spacing={1} alignItems="flex-start">
+          <LocationOnOutlinedIcon fontSize="small" sx={{ color: "text.secondary", mt: .25 }} />
+          <Box sx={{ minWidth: 0 }}><Link href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(businessAddress)}`} target="_blank" rel="noopener noreferrer" aria-label={`Open ${businessAddress} in Google Maps (opens in a new tab)`} underline="hover" sx={{ display: "block" }}>{businessAddress}</Link></Box>
+        </Stack>}
+      </Box>
+    </Paper>}
     {catalog.length > 0 && <Paper component="section" id="services" sx={card}><Typography component="h2" sx={sectionTitle}>Services & catalog</Typography>
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" }, gap: 2 }}>
         {catalog.map((item, index) => <Paper key={item.id || index} sx={{ backgroundColor: "var(--eez-surface-17)", border: "var(--eez-border-7)", boxShadow: "none", borderRadius: 2, overflow: "hidden" }}>
           <ButtonBase onClick={() => setViewer({ kind: "catalog", index })} aria-label={`View ${item.title?.trim() || `service package ${index + 1}`}`} sx={{ ...imageButton, height: "100%", display: "flex", flexDirection: "column", alignItems: "stretch", justifyContent: "flex-start" }}>
-            {item.url && <Box component="img" src={item.url} alt={item.title || `Service package ${index + 1}`} loading="lazy" sx={{ width: "100%", height: 190, objectFit: "cover" }} />}
+            {item.url && <Box sx={{ position: "relative", width: "100%" }}>
+              <Box component="img" src={item.url} alt={item.title || `Service package ${index + 1}`} loading="lazy" sx={{ display: "block", width: "100%", height: 190, objectFit: "cover" }} />
+              {formatPrice(item.price) && <Typography component="span" sx={{ position: "absolute", bottom: 12, right: 12, maxWidth: "calc(100% - 24px)", px: 1.5, py: .75, borderRadius: 1.5, bgcolor: "background.paper", color: "text.primary", boxShadow: 2, typography: "body2", fontWeight: 700, overflowWrap: "anywhere", textAlign: "right", pointerEvents: "none" }}>{formatPrice(item.price)}</Typography>}
+            </Box>}
             <Stack spacing={1.5} sx={{ p: 2.5, flex: 1, overflowWrap: "anywhere" }}>
               <Typography variant="overline" sx={{ color: "var(--eez-ink-5)", letterSpacing: ".1em" }}>Service package</Typography>
               <Typography component="h3" sx={{ fontSize: 21, fontWeight: 700, lineHeight: 1.3 }}>{item.title?.trim() || `Service package ${index + 1}`}</Typography>
-              <Typography sx={{ fontWeight: 700, color: "var(--eez-ink-3)" }}>{formatPrice(item.price) || "Contact vendor for pricing"}</Typography>
+              {(!item.url || !formatPrice(item.price)) && <Typography sx={{ fontWeight: 700, color: "var(--eez-ink-3)" }}>{formatPrice(item.price) || "Contact vendor for pricing"}</Typography>}
               <Box sx={{ flex: 1 }}><Typography variant="body2" fontWeight={700} sx={{ mb: .5 }}>Package details</Typography><Typography color="text.secondary" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.75 }}>{item.notes?.trim() || "Package details haven’t been provided by the vendor yet."}</Typography></Box>
               <Typography sx={{ color: "var(--eez-ink-4)", fontWeight: 700, pt: 1 }}>View package & photos →</Typography>
             </Stack>
@@ -218,6 +263,7 @@ export default function VendorProfilePage({serviceId,initialProfile,returnTo = n
         <Button variant="outlined" color="secondary" startIcon={<WhatsAppIcon />} component="a" href={`https://wa.me/?text=${encodeURIComponent(`Check out ${service.name} on EezEvent: ${shareUrl}`)}`} target="_blank" rel="noopener noreferrer">Share on WhatsApp</Button>
       </Stack>
       <Divider sx={{ my: 2.5, borderColor: "divider" }} />
+      {inquiriesUnavailable && <Typography variant="body2" color="text.secondary">In-app inquiries are unavailable because this vendor does not currently have an active EezEvent subscription.</Typography>}
       {canInquire && <Stack spacing={1.25}>
         {isAuthenticated ? <Button variant="contained" startIcon={<SendRoundedIcon />} onClick={() => setInquiryOpen(true)} disabled={!authReady}>Send an inquiry</Button> : <>
           <Button component={RouterLink} to={`/login?account=client&next=${encodeURIComponent(inquiryPath)}`} variant="contained" disabled={!authReady}>Log in to inquire</Button>
