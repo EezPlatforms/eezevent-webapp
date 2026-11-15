@@ -14,15 +14,24 @@ const withBaseUrl = (path) => `${apiBaseUrl}${path}`;
 
 const toJson = async (response) => {
   if (!response.ok) {
-    let detail = `Request failed with status ${response.status}`;
+    let detail;
     try {
       const payload = await response.json();
-      detail = payload?.detail || detail;
+      detail = payload?.detail;
     } catch {
-      // Keep the generic message when the error payload is not JSON.
+      // A non-JSON response still gets a useful status-based fallback.
     }
-    const error = new Error(typeof detail === "string" ? detail : "The request could not be completed.");
+    const structured = detail && typeof detail === "object" && !Array.isArray(detail) ? detail : null;
+    const message = typeof detail === "string" ? detail : structured?.message;
+    const fallback = response.status === 402
+      ? "Your business subscription is inactive. Renew your plan in the EezEvent mobile app to continue."
+      : `Request failed with status ${response.status}`;
+    const error = new Error(typeof message === "string" && message.trim() ? message : fallback);
     error.status = response.status;
+    error.code = structured?.code;
+    error.upgradeRequired = Boolean(structured?.upgrade_required);
+    error.ownerActionRequired = Boolean(structured?.owner_action_required);
+    error.details = structured?.details;
     throw error;
   }
   return response.json();
@@ -373,3 +382,23 @@ export const updateGuestResponse = (eventId, responseId, payload) => requestJson
 export const updateEventLocation = (eventId, payload) => requestJson(`/events/${eventId}/location`, {
   method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload),
 });
+
+// Reuse the mobile vendor endpoints and the shared authenticated request client.
+export const fetchOwnerProfile = () => requestJson("/business/owner/me", { cache: "no-store" });
+export const fetchVendorServices = () => requestJson("/business/vendor/services", { cache: "no-store" });
+export const fetchVendorDashboardSummary = (serviceId, options = {}) => {
+  const query = serviceId ? `?${new URLSearchParams({ service_id: serviceId })}` : "";
+  return requestJson(`/inquiries/v2/inquiries/vendor/dashboard/summary${query}`, { cache: "no-store", ...options });
+};
+export const fetchVendorAttention = (section, options = {}) => {
+  if (!["unsigned-contracts", "unscheduled-upcoming", "past-not-completed"].includes(section)) throw new Error("Unknown attention section");
+  return requestJson(`/inquiries/v2/inquiries/notifications/${section}`, { cache: "no-store", ...options });
+};
+
+export const fetchVendorInquiries = async (bucket = "open", options = {}) => {
+  if (!["open", "pending", "confirmed", "declined"].includes(bucket)) throw new Error("Unknown inquiry group");
+  const data = await requestJson(`/inquiries/v2/inquiries/business/inquiries?${new URLSearchParams({ status: bucket })}`, { cache: "no-store", ...options });
+  return Array.isArray(data?.inquiries) ? data.inquiries.map(item => ({ ...item, bucket, profile_image_url: normalizeAssetUrl(item.profile_image_url) })) : [];
+};
+
+export const fetchCurrentSubscription = () => requestJson("/subscriptions/current");
