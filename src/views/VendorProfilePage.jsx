@@ -4,6 +4,7 @@ import { useAuth } from "../lib/auth";
 import SendRoundedIcon from "@mui/icons-material/SendRounded";
 import VendorInquiry from "../components/VendorInquiry";
 import { RouterLink } from "../lib/navigation";
+import { buildProfileImages } from "../lib/vendorProfileImages";
 import { formatContactPhone } from "../lib/contactPhone";
 import { formatPrice } from "../lib/formatPrice";
 import { useEffect, useState } from "react";
@@ -29,7 +30,9 @@ export default function VendorProfilePage({serviceId,initialProfile,returnTo = n
   const inquiryPath = `${vendorProfilePath(initialProfile?.service || { service_id: serviceId })}?${inquiryParams}`;
   const [profile, setProfile] = useState(initialProfile || null);
   const canInquire = profile?.service?.can_receive_inquiries === true && authReady && (!isAuthenticated || auth?.userType === "client");
-  const [images, setImages] = useState([]);
+  const inquiriesUnavailable = profile?.service?.can_receive_inquiries === false && authReady && (!isAuthenticated || auth?.userType === "client");
+  const [portfolioImages, setPortfolioImages] = useState([]);
+  const images = buildProfileImages(profile?.service, portfolioImages);
   const [catalog, setCatalog] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [reviewCount, setReviewCount] = useState(0);
@@ -61,6 +64,7 @@ export default function VendorProfilePage({serviceId,initialProfile,returnTo = n
     setLoading(true);
     setError("");
     setProfile(initialProfile || null);
+    setPortfolioImages([]);
     setReviews([]);
     setViewer(null);
     setOffset(0);
@@ -73,7 +77,7 @@ export default function VendorProfilePage({serviceId,initialProfile,returnTo = n
       if (!active) return;
       if (!p?.service) throw new Error("Vendor profile not found.");
       setProfile(p);
-      setImages(i);
+      setPortfolioImages(i);
       setCatalog(c);
     }).catch(e => { if (active) setError(e.message || "Unable to load profile."); })
       .finally(() => { if (active) setLoading(false); });
@@ -159,6 +163,11 @@ export default function VendorProfilePage({serviceId,initialProfile,returnTo = n
         </Box>}
       </ButtonBase>)}
     </Box>}
+    {inquiriesUnavailable && <Alert severity="info">
+      <Typography fontWeight={700}>In-app inquiries unavailable</Typography>
+      <Typography variant="body2">This vendor does not currently have an active EezEvent subscription, so they can’t receive inquiries in the app.</Typography>
+      {(business.phone || business.email) && <Typography variant="body2" sx={{ mt: .5 }}>You can use their listed contact details to reach them directly.</Typography>}
+    </Alert>}
     {canInquire && <VendorInquiry serviceSlug={service.slug} serviceId={serviceId} serviceName={service.name} returnTo={returnTo} open={inquiryOpen} onOpenChange={setInquiryOpen} initialEvent={initialInquiryEvent} />}
     <Box component="nav" aria-label="Profile sections" sx={{ display: "flex", gap: { xs: 3, md: 4 }, borderBottom: "var(--eez-border-6)", overflowX: "auto" }}>
       {[["about", "Overview"], ...(hasBusinessContact ? [["contact", "Business information"]] : []), ...(catalog.length ? [["services", "Services & catalog"]] : []), ["reviews", "Reviews"], ...(images.length > 5 ? [["portfolio", "All photos"]] : [])].map(([id, label]) => <Button key={id} component="a" href={`#${id}`} sx={{ color: "text.primary", borderRadius: 0, px: 0, pb: 1, flexShrink: 0, "&:hover": { color: "var(--eez-ink-4)", background: "transparent" } }}>{label}</Button>)}
@@ -254,6 +263,7 @@ export default function VendorProfilePage({serviceId,initialProfile,returnTo = n
         <Button variant="outlined" color="secondary" startIcon={<WhatsAppIcon />} component="a" href={`https://wa.me/?text=${encodeURIComponent(`Check out ${service.name} on EezEvent: ${shareUrl}`)}`} target="_blank" rel="noopener noreferrer">Share on WhatsApp</Button>
       </Stack>
       <Divider sx={{ my: 2.5, borderColor: "divider" }} />
+      {inquiriesUnavailable && <Typography variant="body2" color="text.secondary">In-app inquiries are unavailable because this vendor does not currently have an active EezEvent subscription.</Typography>}
       {canInquire && <Stack spacing={1.25}>
         {isAuthenticated ? <Button variant="contained" startIcon={<SendRoundedIcon />} onClick={() => setInquiryOpen(true)} disabled={!authReady}>Send an inquiry</Button> : <>
           <Button component={RouterLink} to={`/login?account=client&next=${encodeURIComponent(inquiryPath)}`} variant="contained" disabled={!authReady}>Log in to inquire</Button>
