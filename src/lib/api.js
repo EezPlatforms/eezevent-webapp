@@ -400,3 +400,5 @@ export const fetchVendorInquiries = async (bucket = "open", options = {}) => {
   const data = await requestJson(`/inquiries/v2/inquiries/business/inquiries?${new URLSearchParams({ status: bucket })}`, { cache: "no-store", ...options });
   return Array.isArray(data?.inquiries) ? data.inquiries.map(item => ({ ...item, bucket, profile_image_url: normalizeAssetUrl(item.profile_image_url) })) : [];
 };
+
+export const fetchCurrentSubscription = () => requestJson("/subscriptions/current");

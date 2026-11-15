@@ -12,7 +12,7 @@ import CheckCircleOutlineRoundedIcon from "@mui/icons-material/CheckCircleOutlin
 import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
 import { useAuth } from "../lib/auth";
 import { Navigate, RouterLink } from "../lib/navigation";
-import { fetchOwnerProfile, fetchVendorServices, fetchVendorDashboardSummary, fetchVendorAttention } from "../lib/api";
+import { fetchOwnerProfile, fetchVendorServices, fetchVendorDashboardSummary, fetchVendorAttention, fetchCurrentSubscription } from "../lib/api";
 import { vendorProfilePath } from "../lib/vendorProfilePath";
 import AppDownloadLinks from "../components/AppDownloadLinks";
 
@@ -42,6 +42,7 @@ function WorkList({ items }) {
 export default function VendorDashboardPage() {
   const { auth, authReady, isAuthenticated } = useAuth();
   const [services, setServices] = useState(null);
+  const [subscription, setSubscription] = useState(null);
   const [owner, setOwner] = useState(null);
   const [serviceId, setServiceId] = useState("");
   const [summary, setSummary] = useState(null);
@@ -59,10 +60,10 @@ export default function VendorDashboardPage() {
     setLoading(true); setError(""); setSummary(null);
     async function load() {
       try {
-        const [list, profile] = await Promise.all([fetchVendorServices(), fetchOwnerProfile().catch(() => null)]);
+        const [list, profile, currentSubscription] = await Promise.all([fetchVendorServices(), fetchOwnerProfile().catch(() => null), fetchCurrentSubscription().catch(() => null)]);
         if (!active) return;
         const nextServices = Array.isArray(list) ? list : [];
-        setServices(nextServices); setOwner(profile);
+        setServices(nextServices); setOwner(profile); setSubscription(currentSubscription);
         const selected = nextServices.some(service => String(service.service_id) === serviceId) ? serviceId : "";
         if (selected !== serviceId) { setServiceId(selected); return; }
         if (nextServices.length) {
@@ -116,6 +117,12 @@ export default function VendorDashboardPage() {
       <Box><Typography variant="overline" color="primary.main" sx={{ letterSpacing: ".15em", fontWeight: 700 }}>BUSINESS WORKSPACE</Typography><Typography component="h1" sx={{ fontWeight: 700, fontSize: { xs: 30, md: 38 }, letterSpacing: "-.03em", lineHeight: 1.2, mt: .5 }}>{greeting}, {owner?.first_name?.trim() || auth.userFirstName || "there"}.</Typography><Typography color="text.secondary" sx={{ mt: 1 }}>Your business at a glance. Your next move, in focus.</Typography></Box>
       <Stack direction="row" gap={1} alignItems="center" flexWrap="wrap"><Button component={RouterLink} to={`/inquiries${serviceId ? `?service_id=${encodeURIComponent(serviceId)}` : ""}`} color="inherit">View inquiries</Button><TextField select size="small" label="Service" value={serviceId} onChange={event => { setServiceId(event.target.value); setDetail(null); }} disabled={loading || !services?.length} sx={{ minWidth: 190, maxWidth: 330, flex: 1 }}><MenuItem value="">All services</MenuItem>{(services || []).map(service => <MenuItem key={service.service_id} value={String(service.service_id)}>{[service.name || "Service", service.business_name].filter(Boolean).join(" · ")}</MenuItem>)}</TextField><Button variant="outlined" onClick={() => setRevision(value => value + 1)} disabled={loading} aria-label="Refresh dashboard" sx={{ minWidth: 44, height: 40, px: 1 }}><RefreshRoundedIcon /></Button></Stack>
     </Stack>
+    {subscription?.owned_business_count > 0 && subscription.can_receive_inquiries === false && <Alert severity="warning">
+      <Typography fontWeight={700}>Subscribe to receive inquiries</Typography>
+      <Typography variant="body2" sx={{ mt: .5 }}>Your business profile is free and remains visible. Enroll in a Basic or Pro subscription to let hosts send inquiries to your businesses in the app.</Typography>
+      <Typography variant="body2" sx={{ mt: 1, mb: 1 }}>Open the EezEvent mobile app and choose Subscription to enroll.</Typography>
+      <AppDownloadLinks />
+    </Alert>}
     {error && <Alert severity={error.status === 402 ? "warning" : "error"} action={<Button color="inherit" onClick={() => setRevision(value => value + 1)}>{error.status === 402 ? "Check again" : "Retry"}</Button>}>
       {error.status === 402 && <Typography fontWeight={700}>Subscription required</Typography>}
       {error.message || "Unable to load your dashboard."}

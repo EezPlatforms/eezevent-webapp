@@ -31,8 +31,9 @@ export default function VendorMediaCarousel({ items, index, onChange, onClose, l
             const dx = event.changedTouches[0].clientX - start.x;
             const dy = event.changedTouches[0].clientY - start.y;
             if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) move(dx < 0 ? 1 : -1);
-          }} sx={{ background: "var(--eez-surface-26)", borderRadius: 2, overflow: "hidden" }}>
+          }} sx={{ position: "relative", background: "var(--eez-surface-26)", borderRadius: 2, overflow: "hidden" }}>
           {item.url ? <Box key={item.url} component="img" src={item.url} alt={item.title || item.caption || label} sx={{ display: "block", width: "100%", height: { xs: "42vh", md: "58vh" }, objectFit: "contain" }} /> : <Typography sx={{ p: 6, textAlign: "center" }}>No image available for this package.</Typography>}
+          {item.package && item.url && formatPrice(item.price) && <Typography component="span" sx={{ position: "absolute", bottom: 12, right: 12, maxWidth: "calc(100% - 24px)", px: 1.5, py: .75, borderRadius: 1.5, bgcolor: "background.paper", color: "text.primary", boxShadow: 2, typography: "body2", fontWeight: 700, overflowWrap: "anywhere", textAlign: "right", pointerEvents: "none" }}>{formatPrice(item.price)}</Typography>}
         </Box>
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ my: 2 }}>
           <Button startIcon={<ChevronLeftRoundedIcon />} onClick={() => move(-1)} disabled={items.length < 2} sx={{ color: "text.primary" }}>Previous</Button>
@@ -41,7 +42,7 @@ export default function VendorMediaCarousel({ items, index, onChange, onClose, l
         </Stack>
         <Box sx={{ overflowWrap: "anywhere" }}>
           <Typography component="h3" variant="h6">{item.title || item.caption || `${label} ${index + 1}`}</Typography>
-          {item.package && <Typography sx={{ color: "var(--eez-ink-3)", fontWeight: 700, mt: 1 }}>{formatPrice(item.price) || "Contact vendor for pricing"}</Typography>}
+          {item.package && (!item.url || !formatPrice(item.price)) && <Typography sx={{ color: "var(--eez-ink-3)", fontWeight: 700, mt: 1 }}>{formatPrice(item.price) || "Contact vendor for pricing"}</Typography>}
           {(item.notes || item.package) && <Typography color="text.secondary" sx={{ mt: 1, whiteSpace: "pre-wrap", lineHeight: 1.8 }}>{item.notes?.trim() || "Package details haven’t been provided by the vendor yet."}</Typography>}
         </Box>
       </DialogContent>
