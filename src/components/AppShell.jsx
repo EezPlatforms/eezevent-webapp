@@ -1,4 +1,6 @@
 "use client";
+import InboxOutlinedIcon from "@mui/icons-material/InboxOutlined";
+import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import HostMobileAppNotice from "./HostMobileAppNotice";
 import EventOutlinedIcon from "@mui/icons-material/EventOutlined";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
@@ -34,6 +36,8 @@ import { navItems } from "../data/content";
 import { useAuth } from "../lib/auth";
 
 const navigationIcons = {
+  "/dashboard": DashboardOutlinedIcon,
+  "/inquiries": InboxOutlinedIcon,
   "/events": EventOutlinedIcon,
   "/search-vendors": SearchRoundedIcon,
   "/login": LoginRoundedIcon,
@@ -57,7 +61,7 @@ export default function AppShell({ children, contentSx }) {
   }, [desktop, location.pathname]);
   const visibleNavItems = useMemo(
     () =>
-      navItems.filter((item) => {
+      [...(isAuthenticated && auth?.userType === "vendor" ? [{ to: "/dashboard", label: "Dashboard" }, { to: "/inquiries", label: "Inquiries" }] : []), ...navItems].filter((item) => {
         if (isAuthenticated && item.to === "/login") return false;
         if (item.to === "/events") {
           return isAuthenticated && auth?.userType === "client";

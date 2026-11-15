@@ -27,13 +27,13 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Navigate, RouterLink, useLocation, useNavigate } from "../lib/navigation";
 import { isSocialOnlyAuth } from "../lib/authMode";
-import { isInvitationReturnPath } from "../lib/returnPath";
+import { isInvitationReturnPath, signInDestination } from "../lib/returnPath";
 import { useAuth } from "../lib/auth";
 
 export default function LoginPage({ initialLoginType = "client", initialNextPath = "/" }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, login, loginWithGoogle, loginWithApple, resendValidationCode, validateEmail } = useAuth();
+  const { auth, isAuthenticated, login, loginWithGoogle, loginWithApple, resendValidationCode, validateEmail } = useAuth();
   const invitationLogin = isInvitationReturnPath(initialNextPath);
   const [loginType, setLoginType] = useState(initialLoginType);
   const [email, setEmail] = useState("");
@@ -58,6 +58,7 @@ export default function LoginPage({ initialLoginType = "client", initialNextPath
 
 
   const nextPath = initialNextPath;
+  const destination = (type) => signInDestination(type, nextPath);
 
   useEffect(() => {
     loginTypeRef.current = loginType;
@@ -70,8 +71,8 @@ export default function LoginPage({ initialLoginType = "client", initialNextPath
     setLoading(true);
 
     try {
-      await login({ loginType, email, password });
-      navigate(nextPath, { replace: true });
+      const session = await login({ loginType, email, password });
+      navigate(destination(session?.userType || loginType), { replace: true });
     } catch (err) {
       const message = err.message || "Login failed";
       if (message.toLowerCase().includes("not validated")) {
@@ -100,8 +101,8 @@ export default function LoginPage({ initialLoginType = "client", initialNextPath
 
       try {
         const selectedLoginType = loginTypeRef.current;
-        await loginWithGoogle({ loginType: selectedLoginType, idToken: credential });
-        navigate(nextPath, { replace: true });
+        const session = await loginWithGoogle({ loginType: selectedLoginType, idToken: credential });
+        navigate(signInDestination(session?.userType || selectedLoginType, nextPath), { replace: true });
       } catch (err) {
         setError(err.message || "Google login failed");
       } finally {
@@ -200,7 +201,7 @@ export default function LoginPage({ initialLoginType = "client", initialNextPath
   };
 
   if (isAuthenticated) {
-    return <Navigate to={nextPath} replace />;
+    return <Navigate to={destination(auth?.userType)} replace />;
   }
 
   return (
@@ -279,8 +280,8 @@ export default function LoginPage({ initialLoginType = "client", initialNextPath
           )}
           <AppleSignInButton disabled={loading || googleLoading || appleLoading} onBusyChange={setAppleLoading} onError={setError} onCredential={async response => {
             setError(""); setValidationMessage(""); setRequireValidation(false);
-            await loginWithApple({ loginType, idToken: response.authorization.id_token });
-            navigate(nextPath, { replace: true });
+            const session = await loginWithApple({ loginType, idToken: response.authorization.id_token });
+            navigate(destination(session?.userType || loginType), { replace: true });
           }} />
           {!isSocialOnlyAuth && googleClientId && <Divider sx={{ color: "text.secondary", fontSize: 13 }}>or use email</Divider>}
 

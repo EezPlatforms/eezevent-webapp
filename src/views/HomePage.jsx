@@ -6,7 +6,7 @@ import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import OpenInNewRoundedIcon from "@mui/icons-material/OpenInNewRounded";
 import PersonAddAltRoundedIcon from "@mui/icons-material/PersonAddAltRounded";
 import LoginRoundedIcon from "@mui/icons-material/LoginRounded";
-import { RouterLink, useNavigate } from "../lib/navigation";
+import { Navigate, RouterLink, useNavigate } from "../lib/navigation";
 import { useAuth } from "../lib/auth";
 
 export default function HomePage() {
@@ -20,6 +20,7 @@ export default function HomePage() {
     if (zip && !/^\d{5}(-\d{4})?$/.test(zip)) { setError(true); return; }
     navigate(zip ? `/search-vendors?zipcode=${encodeURIComponent(zip)}` : "/search-vendors");
   };
+  if (isAuthenticated && auth?.userType === "vendor") return <Navigate to="/dashboard" replace />;
   return <Stack spacing={4} sx={{ py: { xs: 2, md: 6 } }}>
     <Box sx={{ width: "100%" }}>
       <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: ".16em" }}>{isAuthenticated ? "Welcome back" : "Welcome to EezEvent"}</Typography>

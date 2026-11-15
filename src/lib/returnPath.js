@@ -10,3 +10,8 @@ export const isInvitationReturnPath = value => {
   const path = safeReturnPath(value);
   return /^\/invite\/[^/?#]+\/?(?:[?#].*)?$/.test(path);
 };
+
+export const signInDestination = (userType, returnPath = "/") => {
+  const path = safeReturnPath(returnPath);
+  return userType === "vendor" && path === "/" ? "/dashboard" : path;
+};
