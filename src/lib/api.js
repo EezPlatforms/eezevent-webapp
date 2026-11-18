@@ -402,3 +402,11 @@ export const fetchVendorInquiries = async (bucket = "open", options = {}) => {
 };
 
 export const fetchCurrentSubscription = () => requestJson("/subscriptions/current");
+
+export const lookupBusinessTransferOwner = email => requestJson(`/business/ownership-transfers/lookup?email=${encodeURIComponent(email)}`);
+export const requestBusinessTransfer = (businessId, email) => requestJson(`/business/ownership-transfers/${businessId}`, {
+  method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }),
+});
+export const fetchBusinessTransfers = () => requestJson("/business/ownership-transfers", { cache: "no-store" });
+export const decideBusinessTransfer = (transferId, accept) => requestJson(`/business/ownership-transfers/${transferId}/decision?accept=${accept}`, { method: "POST" });
+export const cancelBusinessTransfer = transferId => requestJson(`/business/ownership-transfers/${transferId}/cancel`, { method: "POST" });
