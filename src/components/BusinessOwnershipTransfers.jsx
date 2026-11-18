@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Alert, Box, Button, Card, CardContent, Stack, TextField, Typography } from "@mui/material";
 import {
-  fetchBusinessTransfers, fetchOwnerProfile, fetchVendorServices,
+  fetchBusinessTransfers, fetchOwnerProfile, fetchOwnedBusinesses,
   lookupBusinessTransferOwner, requestBusinessTransfer,
   decideBusinessTransfer, cancelBusinessTransfer,
 } from "../lib/api";
@@ -18,12 +18,11 @@ export default function BusinessOwnershipTransfers() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const refresh = useCallback(async () => {
-    const [owner, services, invitations] = await Promise.all([
-      fetchOwnerProfile(), fetchVendorServices(), fetchBusinessTransfers(),
+    const [owner, ownedBusinesses, invitations] = await Promise.all([
+      fetchOwnerProfile(), fetchOwnedBusinesses(), fetchBusinessTransfers(),
     ]);
     setProfile(owner);
-    setBusinesses([...new Map((Array.isArray(services) ? services : []).filter(s => s.business_id)
-      .map(s => [s.business_id, { id: s.business_id, name: s.business_name || `Business #${s.business_id}` }])).values()]);
+    setBusinesses((Array.isArray(ownedBusinesses) ? ownedBusinesses : []).map(b => ({ id: b.business_id, name: b.business_name || `Business #${b.business_id}` })));
     setTransfers(invitations);
   }, []);
   useEffect(() => { refresh().catch(e => setMessage(e.message)); }, [refresh]);
