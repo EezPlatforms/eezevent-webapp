@@ -410,3 +410,5 @@ export const requestBusinessTransfer = (businessId, email) => requestJson(`/busi
 export const fetchBusinessTransfers = () => requestJson("/business/ownership-transfers", { cache: "no-store" });
 export const decideBusinessTransfer = (transferId, accept) => requestJson(`/business/ownership-transfers/${transferId}/decision?accept=${accept}`, { method: "POST" });
 export const cancelBusinessTransfer = transferId => requestJson(`/business/ownership-transfers/${transferId}/cancel`, { method: "POST" });
+
+export const fetchOwnedBusinesses = () => requestJson('/business/my_businesses', { cache: 'no-store' });
