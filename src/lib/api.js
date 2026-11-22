@@ -232,7 +232,7 @@ export const fetchPublicServiceProfile = async (serviceId) => {
 export const fetchServiceImages = async (serviceId) => {
   if (!serviceId) return [];
 
-  const items = await requestJson(`/business/service/${serviceId}/images`);
+  const items = await requestJson(`/business/service/${serviceId}/images`, { cache: "no-store" });
 
   return Array.isArray(items)
     ? items.map((item) => ({
@@ -245,7 +245,7 @@ export const fetchServiceImages = async (serviceId) => {
 export const fetchServiceCatalogItems = async (serviceId) => {
   if (!serviceId) return [];
 
-  const items = await requestJson(`/business/service/${serviceId}/catalog-items`);
+  const items = await requestJson(`/business/service/${serviceId}/catalog-items`, { cache: "no-store" });
 
   return Array.isArray(items)
     ? items.map((item) => ({
@@ -412,3 +412,38 @@ export const decideBusinessTransfer = (transferId, accept) => requestJson(`/busi
 export const cancelBusinessTransfer = transferId => requestJson(`/business/ownership-transfers/${transferId}/cancel`, { method: "POST" });
 
 export const fetchOwnedBusinesses = () => requestJson('/business/my_businesses', { cache: 'no-store' });
+
+const businessWrite = (path, method, payload) => requestJson(path, {
+  method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+});
+export const fetchAdminBusinesses = () => requestJson('/business/my_businesses?include_inactive=true', { cache: 'no-store' });
+export const saveAdminBusiness = (id, payload) => businessWrite(id ? `/business/business/${id}` : '/business/add_business', id ? 'PUT' : 'POST', payload);
+export const fetchAdminService = id => requestJson(`/business/service/${id}`, { cache: 'no-store' });
+export const fetchAdminServices = id => requestJson(`/business/business/${id}/services/history`, { cache: 'no-store' });
+export const saveAdminService = (businessId, id, payload) => businessWrite(id ? `/business/service/${id}` : `/business/add_services/${businessId}`, id ? 'PUT' : 'POST', payload);
+export const setAdminBusinessActive = (id, active) => requestJson(`/business/business/${id}${active ? '/activate' : ''}`, { method: active ? 'PUT' : 'DELETE' });
+export const sendBusinessContactCode = (id, email) => businessWrite(`/business/business/${id}/email/send-code`, 'POST', { email });
+export const verifyBusinessContactCode = (id, email, code) => businessWrite(`/business/business/${id}/email/verify`, 'POST', { email, code });
+export const fetchServiceSpecialties = () => requestJson('/business/service-specialties');
+
+export const uploadAdminServiceImage = (serviceId, file, { main = false, caption = '' } = {}) => {
+  const body = new FormData();
+  body.append('file', file);
+  const query = caption ? `?${new URLSearchParams({ caption })}` : '';
+  return requestJson(`/business/service/${serviceId}/${main ? 'main-image' : 'images'}${query}`, { method: 'POST', body });
+};
+export const setAdminServiceMainImage = (serviceId, imageId) => requestJson(`/business/service/${serviceId}/images/${imageId}/main`, { method: 'PUT' });
+export const deleteAdminServiceImage = (serviceId, imageId) => requestJson(`/business/service/${serviceId}/images/${imageId}`, { method: 'DELETE' });
+export const saveAdminCatalogItem = (serviceId, itemId, { file, title = '', price = '', notes = '' }) => {
+  const body = new FormData();
+  if (itemId != null) {
+    body.append('title', title); body.append('price', price); body.append('notes', notes);
+    if (file) body.append('file', file);
+  } else {
+    body.append('files', file);
+    body.append('metadata', JSON.stringify([{ title, price, notes }]));
+  }
+  return requestJson(`/business/service/${serviceId}/catalog-items${itemId != null ? `/${itemId}` : ''}`, { method: itemId != null ? 'PUT' : 'POST', body });
+};
+export const deleteAdminCatalogItem = (serviceId, itemId) => requestJson(`/business/service/${serviceId}/catalog-items/${itemId}`, { method: 'DELETE' });
+export const orderAdminCatalogItems = (serviceId, itemIds) => businessWrite(`/business/service/${serviceId}/catalog-items/order`, 'PUT', { item_ids: itemIds });

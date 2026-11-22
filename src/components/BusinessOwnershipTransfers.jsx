@@ -1,14 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Alert, Box, Button, Card, CardContent, Stack, TextField, Typography } from "@mui/material";
+import { Alert, Box, Button, Stack, TextField, Typography } from "@mui/material";
+import { AdminSection, adminGridSx } from "./BusinessAdminLayout";
+import SwapHorizRoundedIcon from "@mui/icons-material/SwapHorizRounded";
 import {
   fetchBusinessTransfers, fetchOwnerProfile, fetchOwnedBusinesses,
   lookupBusinessTransferOwner, requestBusinessTransfer,
   decideBusinessTransfer, cancelBusinessTransfer,
 } from "../lib/api";
 
-export default function BusinessOwnershipTransfers() {
+export default function BusinessOwnershipTransfers({ showInvitationForm = true, onChanged }) {
   const [profile, setProfile] = useState(null);
   const [businesses, setBusinesses] = useState([]);
   const [transfers, setTransfers] = useState([]);
@@ -28,38 +30,39 @@ export default function BusinessOwnershipTransfers() {
   useEffect(() => { refresh().catch(e => setMessage(e.message)); }, [refresh]);
   const run = async action => {
     setBusy(true); setMessage("");
-    try { await action(); await refresh(); }
+    try { await action(); await refresh(); await onChanged?.(); }
     catch (error) { setMessage(error.message || "Transfer request failed."); }
     finally { setBusy(false); }
   };
-  const pending = transfers.filter(t => t.status === "pending");
-  return <Card variant="outlined" sx={{ mt: 3 }}>
-    <CardContent><Stack spacing={2}>
-      <Typography variant="h6">Business ownership transfers</Typography>
-      <Typography variant="body2" color="text.secondary">
-        Transfer a business you set up for a vendor. Only a verified registered business owner can accept. The business stays yours until they accept.
-      </Typography>
+  const pending = transfers.filter(t => t.status === "pending" && new Date(t.expires_at).getTime() > Date.now());
+  if (!showInvitationForm && !pending.length) return null;
+  return <AdminSection title="Business ownership transfers" icon={SwapHorizRoundedIcon} subtitle="Accept or decline businesses offered to you, or cancel invitations you sent. Ownership changes only when the recipient accepts.">
+    <Stack spacing={3}>
       {message && <Alert severity="info">{message}</Alert>}
-      <TextField select SelectProps={{ native: true }} label="Business to transfer" value={selected}
+      {showInvitationForm && <Box sx={{ ...adminGridSx, p: { xs: 2, sm: 3 }, bgcolor: "action.hover", borderRadius: 2 }}>
+      <TextField fullWidth select SelectProps={{ native: true }} slotProps={{ inputLabel: { shrink: true } }} label="Business to transfer" value={selected}
         onChange={e => { setSelected(e.target.value); setRecipient(null); }}>
         <option value="">Choose a business</option>
         {businesses.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
       </TextField>
-      <TextField label="Recipient's registered email" type="email" value={email}
+      <TextField fullWidth label="Recipient's registered email" type="email" value={email}
         onChange={e => { setEmail(e.target.value); setRecipient(null); }} />
-      <Button variant="outlined" disabled={busy || !selected || !email.trim()}
+      <Button sx={{ justifySelf: "start" }} variant="outlined" disabled={busy || !selected || !email.trim()}
         onClick={() => run(async () => { const owner = await lookupBusinessTransferOwner(email.trim()); setRecipient(owner); })}>
         Find registered owner
       </Button>
-      {recipient && <Box>
+      {recipient && <Box sx={{ gridColumn: "1 / -1", overflowWrap: "anywhere" }}>
         <Typography variant="body2">Recipient: {recipient.display_name} ({recipient.email})</Typography>
         <Button variant="contained" disabled={busy} onClick={() => {
           if (!window.confirm(`Send ownership invitation to ${recipient.email}?`)) return;
           run(async () => { await requestBusinessTransfer(selected, recipient.email); setRecipient(null); setEmail(""); setMessage("Invitation created."); });
         }}>Email transfer invitation</Button>
       </Box>}
-      {pending.map(t => <Box key={t.id} sx={{ borderTop: 1, borderColor: "divider", pt: 2 }}>
-        <Typography fontWeight={600}>{t.business_name || `Business #${t.business_id}`}</Typography>
+      </Box>}
+      {pending.map(t => <Box key={t.id} sx={{ border: 1, borderColor: "divider", p: { xs: 2, sm: 3 }, borderRadius: 2 }}>
+        <Typography fontWeight={700} sx={{ mb: 1 }}>{t.business_name || `Business #${t.business_id}`}</Typography>
+        <Typography variant="body2" color="text.secondary">From: {t.from_owner_name || "Business owner"}</Typography>
+        <Typography variant="body2" color="text.secondary">Invited: {t.created_at ? new Date(t.created_at).toLocaleDateString() : "Date unavailable"}</Typography>
         {t.to_owner_id === profile?.business_owner_id ? <>
           <Typography variant="body2">You've been invited to take ownership. Expires {new Date(t.expires_at).toLocaleDateString()}.</Typography>
           <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
@@ -74,6 +77,6 @@ export default function BusinessOwnershipTransfers() {
           <Button disabled={busy} onClick={() => run(() => cancelBusinessTransfer(t.id))}>Cancel invitation</Button>
         </> : null}
       </Box>)}
-    </Stack></CardContent>
-  </Card>;
+    </Stack>
+  </AdminSection>;
 }
