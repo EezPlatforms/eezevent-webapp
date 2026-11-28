@@ -98,6 +98,42 @@ return createTheme({
         },
       },
     },
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: ({ theme, ownerState }) => theme.palette.mode === "dark" && (!ownerState.color || ownerState.color === "primary") ? {
+          "&.Mui-focused:not(.Mui-error):not(.Mui-disabled) .MuiOutlinedInput-notchedOutline": {
+            borderColor: theme.palette.primary.light,
+          },
+        } : {},
+      },
+    },
+    MuiInput: {
+      styleOverrides: {
+        root: ({ theme, ownerState }) => theme.palette.mode === "dark" && (!ownerState.color || ownerState.color === "primary") ? {
+          "&.Mui-focused:not(.Mui-error):not(.Mui-disabled)::after": {
+            borderBottomColor: theme.palette.primary.light,
+          },
+        } : {},
+      },
+    },
+    MuiFilledInput: {
+      styleOverrides: {
+        root: ({ theme, ownerState }) => theme.palette.mode === "dark" && (!ownerState.color || ownerState.color === "primary") ? {
+          "&.Mui-focused:not(.Mui-error):not(.Mui-disabled)::after": {
+            borderBottomColor: theme.palette.primary.light,
+          },
+        } : {},
+      },
+    },
+    MuiFormLabel: {
+      styleOverrides: {
+        root: ({ theme, ownerState }) => theme.palette.mode === "dark" && (!ownerState.color || ownerState.color === "primary") ? {
+          "&.Mui-focused:not(.Mui-error):not(.Mui-disabled)": {
+            color: theme.palette.primary.light,
+          },
+        } : {},
+      },
+    },
     MuiButton: {
       styleOverrides: {
         root: {
@@ -109,6 +145,26 @@ return createTheme({
         containedPrimary: {
           backgroundImage: "linear-gradient(180deg, #3740F4 0%, #2E35E8 100%)",
         },
+        outlinedPrimary: ({ theme }) => ({
+          ...(theme.palette.mode === "dark" && {
+            "&:not(.Mui-disabled)": {
+              color: theme.palette.primary.light,
+              borderColor: alpha(theme.palette.primary.light, 0.65),
+            },
+            "&:not(.Mui-disabled):hover": {
+              borderColor: theme.palette.primary.light,
+              backgroundColor: alpha(theme.palette.primary.light, 0.12),
+            },
+          }),
+        }),
+        textPrimary: ({ theme }) => ({
+          ...(theme.palette.mode === "dark" && {
+            "&:not(.Mui-disabled)": { color: theme.palette.primary.light },
+            "&:not(.Mui-disabled):hover": {
+              backgroundColor: alpha(theme.palette.primary.light, 0.12),
+            },
+          }),
+        }),
         outlinedSecondary: {
           borderColor: light ? "#aebbd7" : "rgba(230,231,255,0.5)",
           color: light ? "#334db5" : colors.lavenderText,

@@ -138,7 +138,7 @@ export default function VendorProfilePage({serviceId,initialProfile,returnTo = n
       </Stack>
       <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" alignItems={{ xs: "stretch", md: "center" }} gap={1.5}>
         <Box sx={{ minWidth: 0 }}>
-          <Typography component="h1" sx={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: { xs: 28, sm: 32, md: 36 }, lineHeight: 1.15, letterSpacing: "-.035em", mb: .75, overflowWrap: "anywhere" }}>{service.name}</Typography>
+          <Typography component="h1" variant="h4" sx={{ fontSize: { xs: 28, sm: 32, md: 36 }, lineHeight: 1.2, letterSpacing: "-.03em", mb: .75, overflowWrap: "anywhere" }}>{service.name}</Typography>
           <Stack direction="row" columnGap={2} rowGap={.5} flexWrap="wrap" alignItems="center" sx={{ color: "text.secondary" }}>
             {business.business_name && <Typography variant="body2">{business.business_name}</Typography>}
             {location && <Stack direction="row" gap={0.5} alignItems="center"><LocationOnOutlinedIcon fontSize="small" /><Typography variant="body2">{location}</Typography></Stack>}

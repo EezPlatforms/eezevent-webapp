@@ -1,4 +1,6 @@
 "use client";
+import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
+import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
 import InboxOutlinedIcon from "@mui/icons-material/InboxOutlined";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import HostMobileAppNotice from "./HostMobileAppNotice";
@@ -37,6 +39,7 @@ import { useAuth } from "../lib/auth";
 
 const navigationIcons = {
   "/dashboard": DashboardOutlinedIcon,
+  "/business-admin": StorefrontOutlinedIcon,
   "/inquiries": InboxOutlinedIcon,
   "/events": EventOutlinedIcon,
   "/search-vendors": SearchRoundedIcon,
@@ -61,7 +64,7 @@ export default function AppShell({ children, contentSx }) {
   }, [desktop, location.pathname]);
   const visibleNavItems = useMemo(
     () =>
-      [...(isAuthenticated && auth?.userType === "vendor" ? [{ to: "/dashboard", label: "Dashboard" }, { to: "/inquiries", label: "Inquiries" }] : []), ...navItems].filter((item) => {
+      [...(isAuthenticated && auth?.userType === "vendor" ? [{ to: "/dashboard", label: "Dashboard" }, { to: "/inquiries", label: "Inquiries" }, { to: "/business-admin", label: "Businesses" }] : []), ...navItems].filter((item) => {
         if (isAuthenticated && item.to === "/login") return false;
         if (item.to === "/events") {
           return isAuthenticated && auth?.userType === "client";
@@ -96,7 +99,7 @@ export default function AppShell({ children, contentSx }) {
             <BrandIdentity />
 
             <Stack direction="row" spacing={1} alignItems="center">
-              {visibleNavItems.map((item) => {
+              {visibleNavItems.filter(item => item.to !== '/search-vendors' && (!isAuthenticated || item.label !== 'Help')).map((item) => {
                   const selected =
                     !item.external && (item.to === "/" ? location.pathname === "/" : location.pathname.startsWith(item.to));
 
@@ -115,18 +118,29 @@ export default function AppShell({ children, contentSx }) {
                         display: { xs: "none", md: "inline-flex" },
                         color: selected ? "common.white" : "var(--eez-ink-12)",
                         minWidth: "auto",
-                        px: selected ? 2.2 : 1.4,
+                        px: selected ? 1.5 : 1,
+                        py: 1,
                       }}
                     >
                       {item.label}
                     </Button>
                   );
                 })}
+              <Tooltip title="Search vendors">
+                <IconButton component={RouterLink} to="/search-vendors" aria-label="Search vendors" aria-current={location.pathname.startsWith('/search-vendors') ? 'page' : undefined} color="inherit" sx={{ display: { xs: 'none', md: 'inline-flex' }, color: 'var(--eez-ink-12)', ...(location.pathname.startsWith('/search-vendors') ? { bgcolor: 'action.selected' } : {}) }}>
+                  <SearchRoundedIcon />
+                </IconButton>
+              </Tooltip>
               {isAuthenticated ? (
                 <>
                   <Button
+                    id="account-menu-button"
+                    aria-controls={accountAnchor ? 'account-menu' : undefined}
+                    aria-haspopup="menu"
+                    aria-expanded={Boolean(accountAnchor)}
                     variant="text"
                     color="inherit"
+                    endIcon={<ExpandMoreRoundedIcon fontSize="small" />}
                     startIcon={<PersonOutlineRoundedIcon fontSize="small" />}
                     onClick={(event) => setAccountAnchor(event.currentTarget)}
                     sx={{
@@ -139,6 +153,8 @@ export default function AppShell({ children, contentSx }) {
                     {accountLabel}
                   </Button>
                   <Menu
+                    id="account-menu"
+                    MenuListProps={{ "aria-labelledby": "account-menu-button" }}
                     anchorEl={accountAnchor}
                     open={Boolean(accountAnchor)}
                     onClose={() => setAccountAnchor(null)}
@@ -160,6 +176,13 @@ export default function AppShell({ children, contentSx }) {
                         {auth?.userEmail || "Account"}
                       </Typography>
                     </Box>
+                    <Divider />
+                    <MenuItem component="a" href="https://www.eezevent.com/help.html" target="_blank" rel="noopener noreferrer" aria-label="Help (opens in a new tab)" onClick={() => setAccountAnchor(null)} sx={{ gap: 1.25 }}>
+                      <HelpOutlineRoundedIcon fontSize="small" />Help<OpenInNewRoundedIcon sx={{ ml: 'auto', fontSize: 16 }} />
+                    </MenuItem>
+                    <MenuItem onClick={() => { toggleMode(); setAccountAnchor(null); }} sx={{ gap: 1.25 }}>
+                      {mode === 'light' ? <DarkModeRoundedIcon fontSize="small" /> : <LightModeRoundedIcon fontSize="small" />}Switch to {mode === 'light' ? 'dark' : 'light'} mode
+                    </MenuItem>
                     <Divider />
                     <MenuItem
                       onClick={async () => {
@@ -205,6 +228,10 @@ export default function AppShell({ children, contentSx }) {
                   onClick={() => setMobileAnchor(null)}
                   sx={{ py: 1.5, gap: 2, justifyContent: "space-between" }}
                 ><Stack direction="row" spacing={1.5} alignItems="center"><NavigationIcon to={item.to} /><span>{item.label}</span></Stack>{item.external && <OpenInNewRoundedIcon fontSize="small" />}</MenuItem>)}
+                <Divider />
+                <MenuItem onClick={() => { toggleMode(); setMobileAnchor(null); }} sx={{ py: 1.5, gap: 1.5 }}>
+                  {mode === 'light' ? <DarkModeRoundedIcon fontSize="small" /> : <LightModeRoundedIcon fontSize="small" />}Switch to {mode === 'light' ? 'dark' : 'light'} mode
+                </MenuItem>
                 {isAuthenticated && <Divider />}
                 {isAuthenticated && <Box sx={{ px: 2, py: 1 }}>
                   <Typography variant="body2" fontWeight={600}>{accountLabel}</Typography>
@@ -212,11 +239,11 @@ export default function AppShell({ children, contentSx }) {
                 </Box>}
                 {isAuthenticated && <MenuItem onClick={async () => { setMobileAnchor(null); await logout(); }} sx={{ py: 1.5, gap: 1 }}><LogoutRoundedIcon fontSize="small" />Logout</MenuItem>}
               </Menu>
-              <Tooltip title={`Switch to ${mode === "light" ? "dark" : "light"} mode`}>
-                <IconButton color="inherit" onClick={toggleMode} aria-label={`Switch to ${mode === "light" ? "dark" : "light"} mode`}>
+              {!isAuthenticated && <Tooltip title={`Switch to ${mode === "light" ? "dark" : "light"} mode`}>
+                <IconButton sx={{ display: { xs: "none", md: "inline-flex" } }} color="inherit" onClick={toggleMode} aria-label={`Switch to ${mode === "light" ? "dark" : "light"} mode`}>
                   {mode === "light" ? <DarkModeRoundedIcon /> : <LightModeRoundedIcon />}
                 </IconButton>
-              </Tooltip>
+              </Tooltip>}
             </Stack>
           </Toolbar>
         </Container>
