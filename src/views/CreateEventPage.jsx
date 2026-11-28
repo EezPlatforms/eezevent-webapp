@@ -127,8 +127,8 @@ export default function CreateEventPage({ returnTo = "" }) {
       "&:hover fieldset": {
         borderColor: "var(--eez-outline-6)",
       },
-      "&.Mui-focused fieldset": {
-        borderColor: "#4752FF",
+      "&.Mui-focused:not(.Mui-error):not(.Mui-disabled) fieldset": {
+        borderColor: theme => theme.palette.mode === "dark" ? theme.palette.primary.light : theme.palette.primary.main,
         borderWidth: 2,
       },
     },

@@ -20,7 +20,7 @@ export function AdminHeading({ title, subtitle, backTo, backLabel = 'Business Ad
       </Stack>
       {action}
     </Stack>
-    <Typography color="text.secondary" sx={{ maxWidth: 720 }}>{subtitle}</Typography>
+    <Typography color="text.secondary">{subtitle}</Typography>
     {children}
   </Stack>;
 }
