@@ -29,8 +29,9 @@ export default function VendorProfilePage({serviceId,initialProfile,returnTo = n
   if (returnTo) inquiryParams.set("returnTo", returnTo);
   const inquiryPath = `${vendorProfilePath(initialProfile?.service || { service_id: serviceId })}?${inquiryParams}`;
   const [profile, setProfile] = useState(initialProfile || null);
-  const canInquire = profile?.service?.can_receive_inquiries === true && authReady && (!isAuthenticated || auth?.userType === "client");
-  const inquiriesUnavailable = profile?.service?.can_receive_inquiries === false && authReady && (!isAuthenticated || auth?.userType === "client");
+  const isDraft = profile?.service?.is_draft === true || profile?.service?.status === 'inactive';
+  const canInquire = !isDraft && profile?.service?.can_receive_inquiries === true && authReady && (!isAuthenticated || auth?.userType === "client");
+  const inquiriesUnavailable = !isDraft && profile?.service?.can_receive_inquiries === false && authReady && (!isAuthenticated || auth?.userType === "client");
   const [portfolioImages, setPortfolioImages] = useState([]);
   const images = buildProfileImages(profile?.service, portfolioImages);
   const [catalog, setCatalog] = useState([]);
@@ -135,6 +136,7 @@ export default function VendorProfilePage({serviceId,initialProfile,returnTo = n
       <Stack direction="row" gap={1.5} flexWrap="wrap" alignItems="center" sx={{ mb: 1 }}>
         {returnTo && <Button component={RouterLink} to={returnTo} scroll={false} size="small" startIcon={<ArrowBackRoundedIcon />} sx={{ color: "text.secondary", px: 0, py: .5 }}>Explore vendors</Button>}
         <Chip size="small" label={service.type_name || service.type || "Event vendor"} sx={{ color: "var(--eez-ink-3)", borderColor: "var(--eez-outline-3)", letterSpacing: ".04em", maxWidth: "100%" }} />
+        {isDraft && <Chip size="small" variant="outlined" color="warning" label="Draft" />}
       </Stack>
       <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" alignItems={{ xs: "stretch", md: "center" }} gap={1.5}>
         <Box sx={{ minWidth: 0 }}>
@@ -168,6 +170,7 @@ export default function VendorProfilePage({serviceId,initialProfile,returnTo = n
       <Typography variant="body2">This vendor does not currently have an active EezEvent subscription, so they can’t receive inquiries in the app.</Typography>
       {(business.phone || business.email) && <Typography variant="body2" sx={{ mt: .5 }}>You can use their listed contact details to reach them directly.</Typography>}
     </Alert>}
+    {isDraft && <Alert severity="info">Draft preview — this service is not currently active or accepting inquiries.</Alert>}
     {canInquire && <VendorInquiry serviceSlug={service.slug} serviceId={serviceId} serviceName={service.name} returnTo={returnTo} open={inquiryOpen} onOpenChange={setInquiryOpen} initialEvent={initialInquiryEvent} />}
     <Box component="nav" aria-label="Profile sections" sx={{ display: "flex", gap: { xs: 3, md: 4 }, borderBottom: "var(--eez-border-6)", overflowX: "auto" }}>
       {[["about", "Overview"], ...(hasBusinessContact ? [["contact", "Business information"]] : []), ...(catalog.length ? [["services", "Services & catalog"]] : []), ["reviews", "Reviews"], ...(images.length > 5 ? [["portfolio", "All photos"]] : [])].map(([id, label]) => <Button key={id} component="a" href={`#${id}`} sx={{ color: "text.primary", borderRadius: 0, px: 0, pb: 1, flexShrink: 0, "&:hover": { color: "var(--eez-ink-4)", background: "transparent" } }}>{label}</Button>)}
