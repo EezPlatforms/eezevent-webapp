@@ -10,7 +10,7 @@ export default async function sitemap() {
       const response = await fetch(`${base}/business/public/service/${id}`, { signal: AbortSignal.timeout(5000) });
       if (!response.ok) return null;
       const profile = await response.json();
-      return profile?.service ? vendorProfilePath(profile.service) : null;
+      return profile?.service && !profile.service.is_draft ? vendorProfilePath(profile.service) : null;
     } catch { return vendorProfilePath({ service_id: id }); }
   }));
   const paths = new Set([...slugs.map(slug => vendorProfilePath({ slug })), ...resolved.filter(Boolean)]);
