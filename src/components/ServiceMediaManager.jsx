@@ -4,6 +4,7 @@ import { Alert, Box, Button, Card, CardContent, Chip, CircularProgress, Dialog, 
 import AddPhotoAlternateOutlinedIcon from '@mui/icons-material/AddPhotoAlternateOutlined';
 import { AdminSection } from './BusinessAdminLayout';
 import { fetchAdminService, normalizeAssetUrl, fetchServiceImages, fetchServiceCatalogItems, uploadAdminServiceImage, setAdminServiceMainImage, deleteAdminServiceImage, saveAdminCatalogItem, deleteAdminCatalogItem, orderAdminCatalogItems } from '../lib/api';
+import GalleryUploadDialog from './GalleryUploadDialog';
 import { formatPrice } from '../lib/formatPrice';
 
 const gridSx = { display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(3, minmax(0, 1fr))' }, gap: 2.5 };
@@ -103,11 +104,12 @@ export default function ServiceMediaManager({ serviceId, catalog = false, onBusy
       <AdminSection title="Main image" subtitle="The photo shown on your service card and public profile." action={<Button disabled={busy} variant="outlined" onClick={() => open('main')}>{main ? 'Replace image' : 'Upload image'}</Button>}>
         {main ? <Box sx={{ maxWidth: 680, borderRadius: 2, overflow: 'hidden', border: 1, borderColor: 'divider' }}><MediaPreview url={main.url} title={main.caption || 'Main service image'} large /><Stack direction="row" gap={2} alignItems="center" justifyContent="space-between" sx={{ p: 2 }}><Chip size="small" label="Main image" /><Button color="error" disabled={busy} onClick={() => remove(main)}>Delete image</Button></Stack></Box> : <Typography color="text.secondary">Upload a main image to help clients recognize your service.</Typography>}
       </AdminSection>
-      <AdminSection title="Gallery" subtitle="Add portfolio photos so clients can explore your work." action={<Button disabled={busy} variant="outlined" onClick={() => open('gallery')}>Add photo</Button>}>
+      <AdminSection title="Gallery" subtitle="Add portfolio photos so clients can explore your work." action={<Button disabled={busy} variant="outlined" onClick={() => open('gallery')}>Add photos</Button>}>
         {gallery.length ? <Box sx={gridSx}>{gallery.map(card)}</Box> : <Typography color="text.secondary">No gallery photos yet.</Typography>}
       </AdminSection>
     </>}
-    <Dialog open={Boolean(editor)} onClose={() => { if (!busy) setEditor(null); }} fullWidth maxWidth="sm">
+    {editor?.mode === 'gallery' && <GalleryUploadDialog serviceId={serviceId} onClose={() => setEditor(null)} onBusyChange={value => { setBusy(value); onBusyChange?.(value); }} onUploaded={async count => { await refresh(); setMessage(`${count} gallery photo${count === 1 ? '' : 's'} uploaded.`); }} />}
+    <Dialog open={Boolean(editor) && editor.mode !== 'gallery'} onClose={() => { if (!busy) setEditor(null); }} fullWidth maxWidth="sm">
       <DialogTitle>{catalog ? editor?.item ? 'Edit catalog item' : 'Add catalog item' : editor?.mode === 'main' ? 'Upload main image' : 'Add gallery photo'}</DialogTitle>
       <DialogContent dividers><Stack spacing={2.5}>
         {error && <Alert severity="error">{error}</Alert>}

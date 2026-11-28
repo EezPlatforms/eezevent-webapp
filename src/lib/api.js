@@ -447,3 +447,7 @@ export const saveAdminCatalogItem = (serviceId, itemId, { file, title = '', pric
 };
 export const deleteAdminCatalogItem = (serviceId, itemId) => requestJson(`/business/service/${serviceId}/catalog-items/${itemId}`, { method: 'DELETE' });
 export const orderAdminCatalogItems = (serviceId, itemIds) => businessWrite(`/business/service/${serviceId}/catalog-items/order`, 'PUT', { item_ids: itemIds });
+
+export const fetchAdminBusiness = id => requestJson(`/business/business/${id}`, { cache: 'no-store' });
+export const fetchServiceAreas = id => requestJson(`/business/service/${id}/service-areas`, { cache: 'no-store' });
+export const lookupServiceAreaZip = (zip, options = {}) => requestJson(`/api/v1/locations/zip/${encodeURIComponent(zip)}`, options);

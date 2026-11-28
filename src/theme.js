@@ -98,6 +98,42 @@ return createTheme({
         },
       },
     },
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: ({ theme, ownerState }) => theme.palette.mode === "dark" && (!ownerState.color || ownerState.color === "primary") ? {
+          "&.Mui-focused:not(.Mui-error):not(.Mui-disabled) .MuiOutlinedInput-notchedOutline": {
+            borderColor: theme.palette.primary.light,
+          },
+        } : {},
+      },
+    },
+    MuiInput: {
+      styleOverrides: {
+        root: ({ theme, ownerState }) => theme.palette.mode === "dark" && (!ownerState.color || ownerState.color === "primary") ? {
+          "&.Mui-focused:not(.Mui-error):not(.Mui-disabled)::after": {
+            borderBottomColor: theme.palette.primary.light,
+          },
+        } : {},
+      },
+    },
+    MuiFilledInput: {
+      styleOverrides: {
+        root: ({ theme, ownerState }) => theme.palette.mode === "dark" && (!ownerState.color || ownerState.color === "primary") ? {
+          "&.Mui-focused:not(.Mui-error):not(.Mui-disabled)::after": {
+            borderBottomColor: theme.palette.primary.light,
+          },
+        } : {},
+      },
+    },
+    MuiFormLabel: {
+      styleOverrides: {
+        root: ({ theme, ownerState }) => theme.palette.mode === "dark" && (!ownerState.color || ownerState.color === "primary") ? {
+          "&.Mui-focused:not(.Mui-error):not(.Mui-disabled)": {
+            color: theme.palette.primary.light,
+          },
+        } : {},
+      },
+    },
     MuiButton: {
       styleOverrides: {
         root: {
